@@ -39,11 +39,36 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "analyze":
-        # Implemented incrementally over the schedule.
-        print(f"[wikicontrib {__version__}] analyze '{args.article}' "
-              f"(max {args.max_revisions} revisions) — not yet implemented")
-        return 0
+        return _run_analyze(args.article, args.max_revisions)
 
+    return 0
+
+
+def _run_analyze(article: str, max_revisions: int) -> int:
+    """Day-2 capability: fetch the revision history and report a summary.
+
+    Metric computation is layered on top of this in later stages of the
+    schedule; for now this proves the data pipeline works end-to-end.
+    """
+    from .api import MediaWikiClient, WikiAPIError
+
+    client = MediaWikiClient()
+    try:
+        revisions = client.fetch_revisions(article, max_revisions=max_revisions)
+    except WikiAPIError as exc:
+        print(f"error: {exc}")
+        return 1
+
+    if not revisions:
+        print(f"no revisions found for {article!r}")
+        return 1
+
+    editors = {r.user for r in revisions if r.user}
+    print(f"[wikicontrib {__version__}] {article}")
+    print(f"  revisions fetched : {len(revisions)}")
+    print(f"  distinct editors  : {len(editors)}")
+    print(f"  first edit        : {revisions[0].timestamp}")
+    print(f"  latest edit       : {revisions[-1].timestamp}")
     return 0
 
 
