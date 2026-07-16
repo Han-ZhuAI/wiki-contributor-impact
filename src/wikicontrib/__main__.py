@@ -27,6 +27,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=500,
         help="cap on the number of revisions to fetch (default: 500)",
     )
+    analyze.add_argument(
+        "--refresh",
+        action="store_true",
+        help="ignore cached data and re-fetch from the API",
+    )
     return parser
 
 
@@ -39,36 +44,45 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "analyze":
-        return _run_analyze(args.article, args.max_revisions)
+        return _run_analyze(args.article, args.max_revisions, refresh=args.refresh)
 
     return 0
 
 
-def _run_analyze(article: str, max_revisions: int) -> int:
-    """Day-2 capability: fetch the revision history and report a summary.
+def _run_analyze(article: str, max_revisions: int, refresh: bool = False) -> int:
+    """Fetch the article + talk history and report a summary.
 
     Metric computation is layered on top of this in later stages of the
     schedule; for now this proves the data pipeline works end-to-end.
     """
-    from .api import MediaWikiClient, WikiAPIError
+    from .api import WikiAPIError
+    from .store import RevisionStore
 
-    client = MediaWikiClient()
+    store = RevisionStore()
     try:
-        revisions = client.fetch_revisions(article, max_revisions=max_revisions)
+        history = store.get_page_history(
+            article, max_revisions=max_revisions, refresh=refresh
+        )
     except WikiAPIError as exc:
         print(f"error: {exc}")
         return 1
 
-    if not revisions:
+    if not history.revisions:
         print(f"no revisions found for {article!r}")
         return 1
 
-    editors = {r.user for r in revisions if r.user}
-    print(f"[wikicontrib {__version__}] {article}")
+    revisions = history.revisions
+    print(f"[wikicontrib {__version__}] {history.title}")
     print(f"  revisions fetched : {len(revisions)}")
-    print(f"  distinct editors  : {len(editors)}")
+    print(f"  distinct editors  : {len(history.editors)}")
     print(f"  first edit        : {revisions[0].timestamp}")
     print(f"  latest edit       : {revisions[-1].timestamp}")
+    if history.has_talk:
+        print(f"  talk page         : {history.talk_title}")
+        print(f"  talk revisions    : {len(history.talk_revisions)}")
+        print(f"  talk participants : {len(history.talk_participants)}")
+    else:
+        print("  talk page         : (none found)")
     return 0
 
 
