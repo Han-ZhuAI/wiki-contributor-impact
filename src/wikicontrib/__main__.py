@@ -32,6 +32,14 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="ignore cached data and re-fetch from the API",
     )
+    analyze.add_argument(
+        "--with-diff",
+        action="store_true",
+        help=(
+            "fetch full revision text and diff each edit "
+            "(slower: downloads every revision's wikitext)"
+        ),
+    )
     return parser
 
 
@@ -44,12 +52,22 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "analyze":
-        return _run_analyze(args.article, args.max_revisions, refresh=args.refresh)
+        return _run_analyze(
+            args.article,
+            args.max_revisions,
+            refresh=args.refresh,
+            with_diff=args.with_diff,
+        )
 
     return 0
 
 
-def _run_analyze(article: str, max_revisions: int, refresh: bool = False) -> int:
+def _run_analyze(
+    article: str,
+    max_revisions: int,
+    refresh: bool = False,
+    with_diff: bool = False,
+) -> int:
     """Fetch the article + talk history and report a summary.
 
     Metric computation is layered on top of this in later stages of the
@@ -61,7 +79,10 @@ def _run_analyze(article: str, max_revisions: int, refresh: bool = False) -> int
     store = RevisionStore()
     try:
         history = store.get_page_history(
-            article, max_revisions=max_revisions, refresh=refresh
+            article,
+            max_revisions=max_revisions,
+            refresh=refresh,
+            include_content=with_diff,
         )
     except WikiAPIError as exc:
         print(f"error: {exc}")
@@ -83,7 +104,36 @@ def _run_analyze(article: str, max_revisions: int, refresh: bool = False) -> int
         print(f"  talk participants : {len(history.talk_participants)}")
     else:
         print("  talk page         : (none found)")
+
+    if with_diff:
+        _print_diff_summary(revisions)
     return 0
+
+
+def _print_diff_summary(revisions, limit: int = 15) -> None:
+    """Print per-edit diff statistics.
+
+    Aggregation into per-contributor metrics arrives with the volume metrics;
+    this listing exists to show the diff engine running on real history.
+    """
+    from .diff import diff_history
+
+    diffs = [d for d in diff_history(revisions) if not d.is_empty]
+    if not diffs:
+        print("\n  no textual changes detected")
+        return
+
+    print(f"\n  per-edit diff (first {min(limit, len(diffs))} of {len(diffs)}):")
+    header = f"    {'date':<11}{'editor':<20}{'+words':>7}{'-words':>7}{'net':>7}{'churn':>7}"
+    print(header)
+    print("    " + "-" * (len(header) - 4))
+    for d in diffs[:limit]:
+        editor = (d.user or "(hidden)")[:19]
+        print(
+            f"    {d.timestamp[:10]:<11}{editor:<20}"
+            f"{d.words_added:>7}{d.words_removed:>7}"
+            f"{d.net_words:>+7}{d.churn:>7.2f}"
+        )
 
 
 if __name__ == "__main__":  # pragma: no cover
