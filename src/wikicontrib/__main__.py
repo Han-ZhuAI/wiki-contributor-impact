@@ -106,33 +106,37 @@ def _run_analyze(
         print("  talk page         : (none found)")
 
     if with_diff:
-        _print_diff_summary(revisions)
+        _print_volume_leaderboard(revisions)
     return 0
 
 
-def _print_diff_summary(revisions, limit: int = 15) -> None:
-    """Print per-edit diff statistics.
-
-    Aggregation into per-contributor metrics arrives with the volume metrics;
-    this listing exists to show the diff engine running on real history.
-    """
+def _print_volume_leaderboard(revisions, limit: int = 15) -> None:
+    """Print the per-contributor volume leaderboard for the article."""
     from .diff import diff_history
+    from .metrics import aggregate_volume
 
-    diffs = [d for d in diff_history(revisions) if not d.is_empty]
-    if not diffs:
+    report = aggregate_volume(diff_history(revisions))
+    if not report.contributors:
         print("\n  no textual changes detected")
         return
 
-    print(f"\n  per-edit diff (first {min(limit, len(diffs))} of {len(diffs)}):")
-    header = f"    {'date':<11}{'editor':<20}{'+words':>7}{'-words':>7}{'net':>7}{'churn':>7}"
+    ranked = report.ranked(by="net_words")
+    shown = ranked[:limit]
+    print(
+        f"\n  contributor volume — top {len(shown)} of "
+        f"{len(ranked)} by net words:"
+    )
+    header = (
+        f"    {'contributor':<22}{'edits':>6}{'+words':>8}"
+        f"{'-words':>8}{'net':>8}{'share':>7}"
+    )
     print(header)
     print("    " + "-" * (len(header) - 4))
-    for d in diffs[:limit]:
-        editor = (d.user or "(hidden)")[:19]
+    for c in shown:
         print(
-            f"    {d.timestamp[:10]:<11}{editor:<20}"
-            f"{d.words_added:>7}{d.words_removed:>7}"
-            f"{d.net_words:>+7}{d.churn:>7.2f}"
+            f"    {c.user[:21]:<22}{c.edits:>6}{c.words_added:>8}"
+            f"{c.words_removed:>8}{c.net_words:>+8}"
+            f"{report.share_of_added(c.user) * 100:>6.1f}%"
         )
 
 
