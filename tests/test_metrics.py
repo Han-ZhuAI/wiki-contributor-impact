@@ -11,7 +11,7 @@ from wikicontrib.metrics import (
 
 
 def _diff(user, added, removed, *, revid=1, timestamp="2020-01-01T00:00:00Z",
-          minor=False, anon=False):
+          minor=False, anon=False, comment=""):
     return RevisionDiff(
         revid=revid,
         parentid=revid - 1,
@@ -19,6 +19,7 @@ def _diff(user, added, removed, *, revid=1, timestamp="2020-01-01T00:00:00Z",
         timestamp=timestamp,
         minor=minor,
         anon=anon,
+        comment=comment,
         added=["w"] * added,       # word tokens
         removed=["w"] * removed,
     )
@@ -131,3 +132,42 @@ def test_share_of_added_handles_empty():
 def test_share_is_zero_for_unknown_user():
     report = aggregate_volume([_diff("Alice", 10, 0)])
     assert report.share_of_added("Stranger") == 0.0
+
+
+# -- additive vs maintenance split ------------------------------------------
+
+
+def test_additive_and_maintenance_edits_are_counted():
+    report = aggregate_volume([
+        _diff("Alice", 100, 0),                       # expansion -> additive
+        _diff("Alice", 0, 0, comment="fix typo"),     # -> maintenance
+        _diff("Alice", 8, 8),                          # rewrite -> maintenance
+    ])
+    alice = report.contributors["Alice"]
+    assert alice.edits == 3
+    assert alice.additive_edits == 1
+    assert alice.maintenance_edits == 2
+    assert alice.maintenance_ratio == pytest.approx(2 / 3)
+
+
+def test_additive_words_track_only_additive_edits():
+    report = aggregate_volume([
+        _diff("Alice", 100, 0),                    # additive: +100 words
+        _diff("Alice", 5, 40),                      # trim -> maintenance
+    ])
+    alice = report.contributors["Alice"]
+    assert alice.additive_words == 100  # the trim's 5 added words don't count
+
+
+def test_content_author_vs_gnome_are_distinguished():
+    author = aggregate_volume([_diff("Author", 200, 0)]).contributors["Author"]
+    gnome = aggregate_volume([
+        _diff("Gnome", 0, 0, comment="ce"),
+        _diff("Gnome", 0, 0, comment="fmt"),
+    ]).contributors["Gnome"]
+    assert author.maintenance_ratio == 0.0
+    assert gnome.maintenance_ratio == 1.0
+
+
+def test_maintenance_ratio_zero_without_edits():
+    assert ContributorVolume(user="Ghost").maintenance_ratio == 0.0

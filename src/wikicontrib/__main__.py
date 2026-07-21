@@ -128,15 +128,16 @@ def _print_volume_leaderboard(revisions, limit: int = 15) -> None:
     )
     header = (
         f"    {'contributor':<22}{'edits':>6}{'+words':>8}"
-        f"{'-words':>8}{'net':>8}{'share':>7}"
+        f"{'net':>8}{'share':>7}{'maint%':>8}"
     )
     print(header)
     print("    " + "-" * (len(header) - 4))
     for c in shown:
         print(
             f"    {c.user[:21]:<22}{c.edits:>6}{c.words_added:>8}"
-            f"{c.words_removed:>8}{c.net_words:>+8}"
+            f"{c.net_words:>+8}"
             f"{report.share_of_added(c.user) * 100:>6.1f}%"
+            f"{c.maintenance_ratio * 100:>7.0f}%"
         )
 
 

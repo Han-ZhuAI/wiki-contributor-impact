@@ -29,6 +29,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from .classify import ClassifierConfig, EditType, classify_edit
 from .diff import RevisionDiff
 
 #: Label used for edits whose author has been suppressed/hidden by the API.
@@ -45,6 +46,9 @@ class ContributorVolume:
     anon: bool = False
     words_added: int = 0
     words_removed: int = 0
+    additive_edits: int = 0
+    maintenance_edits: int = 0
+    additive_words: int = 0
     first_edit: str = ""
     last_edit: str = ""
 
@@ -63,12 +67,27 @@ class ContributorVolume:
         """Mean gross words per edit; 0 for a contributor with no edits."""
         return self.gross_words / self.edits if self.edits else 0.0
 
-    def _accumulate(self, diff: RevisionDiff) -> None:
+    @property
+    def maintenance_ratio(self) -> float:
+        """Fraction of this contributor's edits that were maintenance (0.0–1.0).
+
+        This is the per-contributor form of the additive-vs-maintenance
+        distinction: a content author sits near 0, a gnome/vandal-fighter near
+        1. Undefined for someone with no edits, reported as 0.0.
+        """
+        return self.maintenance_edits / self.edits if self.edits else 0.0
+
+    def _accumulate(self, diff: RevisionDiff, edit_type: EditType) -> None:
         self.edits += 1
         if diff.minor:
             self.minor_edits += 1
         self.words_added += diff.words_added
         self.words_removed += diff.words_removed
+        if edit_type.is_additive:
+            self.additive_edits += 1
+            self.additive_words += diff.words_added
+        else:
+            self.maintenance_edits += 1
         if not self.first_edit or diff.timestamp < self.first_edit:
             self.first_edit = diff.timestamp
         if diff.timestamp > self.last_edit:
@@ -107,8 +126,13 @@ class VolumeReport:
         return sorted(self.contributors.values(), key=key)
 
 
-def aggregate_volume(diffs: list[RevisionDiff]) -> VolumeReport:
+def aggregate_volume(
+    diffs: list[RevisionDiff], config: ClassifierConfig | None = None
+) -> VolumeReport:
     """Aggregate per-edit diffs into per-contributor volume metrics.
+
+    Each edit is also classified (additive vs. maintenance) so the per-
+    contributor additive/maintenance split is available alongside raw volume.
 
     Empty edits (null edits, whitespace-only, pure markup churn that touched no
     words) still count towards a contributor's ``edits`` tally — they happened —
@@ -121,5 +145,6 @@ def aggregate_volume(diffs: list[RevisionDiff]) -> VolumeReport:
         if contributor is None:
             contributor = ContributorVolume(user=user, anon=diff.anon)
             report.contributors[user] = contributor
-        contributor._accumulate(diff)
+        classification = classify_edit(diff, config)
+        contributor._accumulate(diff, classification.edit_type)
     return report
