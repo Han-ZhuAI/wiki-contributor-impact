@@ -102,12 +102,19 @@ def strip_section_marker(comment: str) -> str:
 
 
 def classify_edit(
-    diff: RevisionDiff, config: ClassifierConfig | None = None
+    diff: RevisionDiff,
+    config: ClassifierConfig | None = None,
+    *,
+    identity_revert: bool = False,
 ) -> Classification:
     """Classify a single edit as additive or maintenance.
 
     Rules are applied in priority order and the first match wins, so the
     ``reason`` names exactly which rule fired.
+
+    ``identity_revert`` is supplied by the caller when hash-based detection
+    (:mod:`wikicontrib.reverts`) proved this revision restored an earlier
+    state. Proof beats inference, so it outranks every other rule.
     """
     cfg = config or ClassifierConfig()
     comment = strip_section_marker(diff.comment)
@@ -121,7 +128,11 @@ def classify_edit(
     def result(edit_type: EditType, reason: str) -> Classification:
         return Classification(edit_type, reason, signals)
 
-    # 1. Explicit revert summaries are the strongest maintenance signal.
+    # 0. Hash-proven revert: the page text is identical to an earlier state.
+    if identity_revert:
+        return result(EditType.MAINTENANCE, "identity-revert")
+
+    # 1. Explicit revert summaries are the strongest remaining signal.
     if _REVERT_RE.search(comment):
         return result(EditType.MAINTENANCE, "revert-comment")
 

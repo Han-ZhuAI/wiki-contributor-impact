@@ -112,10 +112,9 @@ def _run_analyze(
 
 def _print_volume_leaderboard(revisions, limit: int = 15) -> None:
     """Print the per-contributor volume leaderboard for the article."""
-    from .diff import diff_history
-    from .metrics import aggregate_volume
+    from .metrics import aggregate_history
 
-    report = aggregate_volume(diff_history(revisions))
+    report = aggregate_history(revisions)
     if not report.contributors:
         print("\n  no textual changes detected")
         return

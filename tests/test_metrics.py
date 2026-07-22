@@ -171,3 +171,42 @@ def test_content_author_vs_gnome_are_distinguished():
 
 def test_maintenance_ratio_zero_without_edits():
     assert ContributorVolume(user="Ghost").maintenance_ratio == 0.0
+
+
+# -- identity reverts in aggregation ----------------------------------------
+
+
+def test_identity_reverts_classify_as_maintenance():
+    report = aggregate_volume(
+        [_diff("Patroller", 300, 5, revid=9)],   # would read as expansion...
+        identity_reverts={9},                     # ...but hashing proved revert
+    )
+    patroller = report.contributors["Patroller"]
+    assert patroller.maintenance_edits == 1
+    assert patroller.additive_edits == 0
+
+
+def test_aggregate_history_pipeline_detects_reverts():
+    from wikicontrib.api import RawRevision
+    from wikicontrib.metrics import aggregate_history
+
+    def rev(revid, content, user):
+        return RawRevision(
+            revid=revid, parentid=revid - 1,
+            timestamp=f"2020-01-{revid:02d}T00:00:00Z",
+            user=user, userid=1, comment="", size=len(content),
+            minor=False, anon=False, content=content,
+        )
+
+    history = [
+        rev(1, "good article text", "Author"),
+        rev(2, "good article text JUNK JUNK JUNK", "Vandal"),
+        rev(3, "good article text", "Patroller"),  # unlabelled revert
+    ]
+    report = aggregate_history(history)
+    # The patroller's restore adds words vs. its parent, but must be
+    # classified maintenance via the hash proof, with no additive credit.
+    patroller = report.contributors["Patroller"]
+    assert patroller.maintenance_edits == 1
+    assert patroller.additive_edits == 0
+    assert patroller.additive_words == 0

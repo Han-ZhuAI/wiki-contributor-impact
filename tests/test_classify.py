@@ -162,3 +162,22 @@ def test_signals_recorded_for_audit():
 def test_classification_is_additive_helper():
     assert classify_edit(_diff(added=100)).is_additive is True
     assert classify_edit(_diff(added=0, comment="typo")).is_additive is False
+
+
+# -- identity reverts (rule 0) ----------------------------------------------
+
+
+def test_identity_revert_is_maintenance_with_top_priority():
+    # A big unlabelled restore looks like a large addition to the diff, but
+    # the hash proof overrides every other signal.
+    c = classify_edit(_diff(added=300, comment="restored better wording... not"),
+                      identity_revert=True)
+    assert c.edit_type is EditType.MAINTENANCE
+    assert c.reason == "identity-revert"
+
+
+def test_identity_revert_beats_additive_expansion():
+    plain = classify_edit(_diff(added=300))
+    proven = classify_edit(_diff(added=300), identity_revert=True)
+    assert plain.edit_type is EditType.ADDITIVE
+    assert proven.edit_type is EditType.MAINTENANCE

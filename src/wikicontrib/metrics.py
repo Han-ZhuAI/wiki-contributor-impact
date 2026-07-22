@@ -29,8 +29,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from .api import RawRevision
 from .classify import ClassifierConfig, EditType, classify_edit
-from .diff import RevisionDiff
+from .diff import RevisionDiff, diff_history
+from .reverts import find_identity_reverts
 
 #: Label used for edits whose author has been suppressed/hidden by the API.
 HIDDEN_AUTHOR = "(hidden)"
@@ -127,17 +129,23 @@ class VolumeReport:
 
 
 def aggregate_volume(
-    diffs: list[RevisionDiff], config: ClassifierConfig | None = None
+    diffs: list[RevisionDiff],
+    config: ClassifierConfig | None = None,
+    identity_reverts: set[int] | None = None,
 ) -> VolumeReport:
     """Aggregate per-edit diffs into per-contributor volume metrics.
 
     Each edit is also classified (additive vs. maintenance) so the per-
     contributor additive/maintenance split is available alongside raw volume.
+    ``identity_reverts`` holds revids proven to be reverts by content hashing
+    (:mod:`wikicontrib.reverts`); those classify as maintenance regardless of
+    their summaries.
 
     Empty edits (null edits, whitespace-only, pure markup churn that touched no
     words) still count towards a contributor's ``edits`` tally — they happened —
     but naturally add nothing to the word totals.
     """
+    revert_ids = identity_reverts or set()
     report = VolumeReport()
     for diff in diffs:
         user = diff.user or HIDDEN_AUTHOR
@@ -145,6 +153,21 @@ def aggregate_volume(
         if contributor is None:
             contributor = ContributorVolume(user=user, anon=diff.anon)
             report.contributors[user] = contributor
-        classification = classify_edit(diff, config)
+        classification = classify_edit(
+            diff, config, identity_revert=diff.revid in revert_ids
+        )
         contributor._accumulate(diff, classification.edit_type)
     return report
+
+
+def aggregate_history(
+    revisions: list[RawRevision], config: ClassifierConfig | None = None
+) -> VolumeReport:
+    """Full pipeline: revisions (with content) -> diffs -> reverts -> report.
+
+    Convenience entry point wiring together the diff engine, hash-based revert
+    detection and per-contributor aggregation in one call.
+    """
+    diffs = diff_history(revisions)
+    identity_reverts = set(find_identity_reverts(revisions))
+    return aggregate_volume(diffs, config, identity_reverts)
