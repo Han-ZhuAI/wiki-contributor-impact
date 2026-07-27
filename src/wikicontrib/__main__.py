@@ -107,6 +107,7 @@ def _run_analyze(
 
     if with_diff:
         _print_volume_leaderboard(revisions)
+        _print_persistence_leaderboard(revisions)
     return 0
 
 
@@ -137,6 +138,33 @@ def _print_volume_leaderboard(revisions, limit: int = 15) -> None:
             f"{c.net_words:>+8}"
             f"{report.share_of_added(c.user) * 100:>6.1f}%"
             f"{c.maintenance_ratio * 100:>7.0f}%"
+        )
+
+
+def _print_persistence_leaderboard(revisions, limit: int = 15) -> None:
+    """Print the per-contributor text-survival leaderboard."""
+    from .persistence import track_persistence
+
+    report = track_persistence(revisions)
+    if not report.final_word_count:
+        return
+
+    ranked = [c for c in report.ranked() if c.words_introduced][:limit]
+    print(
+        f"\n  content persistence — top {len(ranked)} by surviving words "
+        f"(final article: {report.final_word_count} words):"
+    )
+    header = (
+        f"    {'contributor':<22}{'introduced':>11}{'surviving':>10}"
+        f"{'survival':>9}{'share':>7}"
+    )
+    print(header)
+    print("    " + "-" * (len(header) - 4))
+    for c in ranked:
+        print(
+            f"    {c.user[:21]:<22}{c.words_introduced:>11}{c.words_surviving:>10}"
+            f"{c.survival_rate * 100:>8.0f}%"
+            f"{report.share_of_surviving(c.user) * 100:>6.1f}%"
         )
 
 
