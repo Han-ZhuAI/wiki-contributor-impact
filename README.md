@@ -37,15 +37,23 @@ full wikitext content. No scraping and no credentials are required.
 
 ## Status
 
-Under active development — see [SCHEDULE.md](SCHEDULE.md) for the 16-day plan and
-the git history for stepwise progress.
+Under active development. The data pipeline, revision diffing, contributor
+volume, additive/maintenance classification, exact-revert detection and
+content-persistence metrics are implemented. Discussion-impact scoring and the
+composite model remain planned; see [SCHEDULE.md](SCHEDULE.md).
 
-## Quick start (target interface)
+## Quick start
 
 ```bash
 pip install -r requirements.txt
-python -m wikicontrib analyze "Alan Turing" --max-revisions 500
+python -m wikicontrib analyze "Alan Turing" --with-diff
 ```
+
+The default analyzes the complete revision history so that the persistence
+leaderboard describes the current article. During development, use
+`--max-revisions 500` for a faster run over the earliest 500 revisions. The CLI
+labels capped runs as historical slices to prevent them being mistaken for
+current-state results.
 
 ## Repository layout
 

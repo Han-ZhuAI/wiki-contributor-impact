@@ -59,6 +59,31 @@ def test_reverted_text_does_not_survive():
     assert report.contributors["Alice"].words_surviving == 3
 
 
+def test_full_page_revert_restores_original_authorship():
+    # A vandal replaces the whole page. Restoring the earlier state must not
+    # make the patroller look like the author of Alice's recovered prose.
+    report = track_persistence([
+        _rev(1, "original good text", "Alice"),
+        _rev(2, "spam vandalism", "Vandal"),
+        _rev(3, "original good text", "Patroller"),
+    ])
+    assert report.contributors["Alice"].words_surviving == 3
+    assert report.contributors["Vandal"].words_surviving == 0
+    assert "Patroller" not in report.contributors
+
+
+def test_reintroduced_deleted_span_keeps_original_author():
+    # Exact spans can be restored as part of a new, non-identical state.
+    report = track_persistence([
+        _rev(1, "alpha beta gamma delta", "Alice"),
+        _rev(2, "alpha delta", "Bob"),
+        _rev(3, "alpha beta gamma delta extra", "Carol"),
+    ])
+    assert report.contributors["Alice"].words_surviving == 4
+    assert report.contributors["Carol"].words_introduced == 1
+    assert report.contributors["Carol"].words_surviving == 1
+
+
 def test_partial_survival_rate():
     # Alice writes four words; a later edit deletes two of them.
     report = track_persistence([
