@@ -1,14 +1,18 @@
-"""Command-line entry point.
-
-Currently a scaffold: the ``analyze`` sub-command is stubbed and will be
-implemented across the schedule (see SCHEDULE.md, Day 12).
-"""
+"""Command-line entry point for article-history analysis."""
 
 from __future__ import annotations
 
 import argparse
 
 from . import __version__
+
+
+def _positive_int(value: str) -> int:
+    """Parse a strictly positive integer for revision-limit arguments."""
+    parsed = int(value)
+    if parsed <= 0:
+        raise argparse.ArgumentTypeError("must be a positive integer")
+    return parsed
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -21,11 +25,23 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command")
     analyze = sub.add_parser("analyze", help="analyze a single article's edit history")
     analyze.add_argument("article", help="article title, e.g. \"Alan Turing\"")
-    analyze.add_argument(
+    history_scope = analyze.add_mutually_exclusive_group()
+    history_scope.add_argument(
         "--max-revisions",
-        type=int,
+        type=_positive_int,
         default=500,
-        help="cap on the number of revisions to fetch (default: 500)",
+        help=(
+            "analyze only the earliest N revisions (default: 500); capped "
+            "results are labelled as a historical slice"
+        ),
+    )
+    history_scope.add_argument(
+        "--all-revisions",
+        action="store_true",
+        help=(
+            "fetch the complete history so persistence is measured against "
+            "the current page (can be slow for heavily edited articles)"
+        ),
     )
     analyze.add_argument(
         "--refresh",
@@ -54,7 +70,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "analyze":
         return _run_analyze(
             args.article,
-            args.max_revisions,
+            None if args.all_revisions else args.max_revisions,
             refresh=args.refresh,
             with_diff=args.with_diff,
         )
@@ -64,7 +80,7 @@ def main(argv: list[str] | None = None) -> int:
 
 def _run_analyze(
     article: str,
-    max_revisions: int,
+    max_revisions: int | None,
     refresh: bool = False,
     with_diff: bool = False,
 ) -> int:
@@ -97,7 +113,16 @@ def _run_analyze(
     print(f"  revisions fetched : {len(revisions)}")
     print(f"  distinct editors  : {len(history.editors)}")
     print(f"  first edit        : {revisions[0].timestamp}")
-    print(f"  latest edit       : {revisions[-1].timestamp}")
+    print(f"  latest fetched edit: {revisions[-1].timestamp}")
+    if max_revisions is None:
+        print("  history scope      : complete")
+    else:
+        print(f"  history scope      : earliest {len(revisions)} revisions")
+        if len(revisions) >= max_revisions:
+            print(
+                "  warning            : revision cap reached; persistence and "
+                "rankings describe this historical slice, not the current article"
+            )
     if history.has_talk:
         print(f"  talk page         : {history.talk_title}")
         print(f"  talk revisions    : {len(history.talk_revisions)}")
