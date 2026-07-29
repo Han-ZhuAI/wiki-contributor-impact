@@ -72,14 +72,40 @@ def test_full_page_revert_restores_original_authorship():
     assert "Patroller" not in report.contributors
 
 
-def test_reintroduced_deleted_span_keeps_original_author():
-    # Exact spans can be restored as part of a new, non-identical state.
+def test_exact_revert_restores_even_a_short_changed_span():
+    # Exact revision identity is strong enough evidence to restore a single
+    # changed word without relying on the partial-span heuristic.
     report = track_persistence([
-        _rev(1, "alpha beta gamma delta", "Alice"),
-        _rev(2, "alpha delta", "Bob"),
-        _rev(3, "alpha beta gamma delta extra", "Carol"),
+        _rev(1, "alpha original omega", "Alice"),
+        _rev(2, "alpha vandalism omega", "Vandal"),
+        _rev(3, "alpha original omega", "Patroller"),
     ])
-    assert report.contributors["Alice"].words_surviving == 4
+    assert report.contributors["Alice"].words_surviving == 3
+    assert report.contributors["Vandal"].words_surviving == 0
+    assert "Patroller" not in report.contributors
+
+
+def test_reintroduced_deleted_span_keeps_original_author():
+    # Substantial exact spans can be restored as part of a non-identical state.
+    report = track_persistence([
+        _rev(1, "alpha beta gamma delta omega", "Alice"),
+        _rev(2, "alpha omega", "Bob"),
+        _rev(3, "alpha beta gamma delta omega extra", "Carol"),
+    ])
+    assert report.contributors["Alice"].words_surviving == 5
+    assert report.contributors["Carol"].words_introduced == 1
+    assert report.contributors["Carol"].words_surviving == 1
+
+
+def test_short_readdition_is_credited_to_current_editor():
+    # A single common word may be independently re-added later. Without strong
+    # revert evidence it must not inherit a previous editor's provenance.
+    report = track_persistence([
+        _rev(1, "alpha common omega", "Alice"),
+        _rev(2, "alpha omega", "Bob"),
+        _rev(3, "alpha omega common", "Carol"),
+    ])
+    assert report.contributors["Alice"].words_surviving == 2
     assert report.contributors["Carol"].words_introduced == 1
     assert report.contributors["Carol"].words_surviving == 1
 

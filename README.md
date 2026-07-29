@@ -45,15 +45,19 @@ composite model remain planned; see [SCHEDULE.md](SCHEDULE.md).
 ## Quick start
 
 ```bash
-pip install -r requirements.txt
+pip install -e .
 python -m wikicontrib analyze "Alan Turing" --with-diff
 ```
 
-The default analyzes the complete revision history so that the persistence
-leaderboard describes the current article. During development, use
-`--max-revisions 500` for a faster run over the earliest 500 revisions. The CLI
-labels capped runs as historical slices to prevent them being mistaken for
-current-state results.
+The safe default analyzes the earliest 500 revisions and labels the result as a
+historical slice. To measure persistence against the current article, request
+the complete history explicitly:
+
+```bash
+python -m wikicontrib analyze "Alan Turing" --all-revisions --with-diff
+```
+
+Complete histories can be slow and large for heavily edited articles.
 
 ## Repository layout
 

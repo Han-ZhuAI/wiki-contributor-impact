@@ -25,13 +25,22 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command")
     analyze = sub.add_parser("analyze", help="analyze a single article's edit history")
     analyze.add_argument("article", help="article title, e.g. \"Alan Turing\"")
-    analyze.add_argument(
+    history_scope = analyze.add_mutually_exclusive_group()
+    history_scope.add_argument(
         "--max-revisions",
         type=_positive_int,
-        default=None,
+        default=500,
         help=(
-            "analyze only the earliest N revisions; by default the complete "
-            "history is fetched so persistence is measured against the current page"
+            "analyze only the earliest N revisions (default: 500); capped "
+            "results are labelled as a historical slice"
+        ),
+    )
+    history_scope.add_argument(
+        "--all-revisions",
+        action="store_true",
+        help=(
+            "fetch the complete history so persistence is measured against "
+            "the current page (can be slow for heavily edited articles)"
         ),
     )
     analyze.add_argument(
@@ -61,7 +70,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "analyze":
         return _run_analyze(
             args.article,
-            args.max_revisions,
+            None if args.all_revisions else args.max_revisions,
             refresh=args.refresh,
             with_diff=args.with_diff,
         )
