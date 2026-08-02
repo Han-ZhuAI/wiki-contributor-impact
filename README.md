@@ -41,7 +41,8 @@ Under active development. The data pipeline, revision diffing, contributor
 volume, additive/maintenance classification, exact-revert detection and
 content-persistence metrics are implemented. Talk-page signatures, threads,
 replies, discussion centrality and post-to-edit temporal links are also
-measured. Contributor profiles and the composite model remain planned; see
+measured. These signals are assembled into normalised per-contributor feature
+profiles; the weighted composite model remains planned. See
 [SCHEDULE.md](SCHEDULE.md).
 
 ## Quick start
@@ -67,6 +68,24 @@ from the replying user to the person whose comment they answered. The `linked`
 column counts same-user article edits within 14 days after a Talk post. This is
 reported as a temporal association rather than a claim that the post caused the
 edit.
+
+## Contributor feature profiles
+
+`wikicontrib.profile.build_profiles` joins article and Talk metrics for every
+observed contributor, including article-only and Talk-only participants. It
+preserves the raw evidence and adds four comparable `0..1` axes:
+
+| Axis | Normalised signal |
+|------|-------------------|
+| `volume` | Log-scaled gross words touched, relative to the article maximum |
+| `additive` | Share of the contributor's article edits classified as additive |
+| `persistence` | Log-scaled surviving words, relative to the article maximum |
+| `discussion` | Reply-graph PageRank, relative to the article maximum |
+
+Counts use log scaling so one extreme editor does not visually flatten every
+other profile. The axes deliberately remain separate at this stage; Day 11
+adds explicit, configurable weights rather than hiding a ranking policy inside
+normalisation.
 
 ## Repository layout
 
