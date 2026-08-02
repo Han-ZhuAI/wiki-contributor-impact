@@ -2,7 +2,7 @@
 
 from types import SimpleNamespace
 
-from wikicontrib.__main__ import _run_analyze
+from wikicontrib.__main__ import _print_discussion_leaderboard, _run_analyze
 from wikicontrib.api import RawRevision
 
 
@@ -56,3 +56,22 @@ def test_uncapped_history_is_labelled_complete(monkeypatch, capsys):
     output = capsys.readouterr().out
     assert "history scope      : complete" in output
     assert "not the current article" not in output
+
+
+def test_discussion_leaderboard_explains_centrality_and_temporal_link(capsys):
+    talk_revision = _revision(10)
+    talk_revision.content = (
+        "== Topic ==\n"
+        "Proposal. [[User:Alice]] 10:00, 1 January 2020 (UTC)\n"
+        ":Reply. [[User:Bob]] 11:00, 1 January 2020 (UTC)"
+    )
+    article_revision = _revision(11)
+    article_revision.timestamp = "2020-01-02T00:00:00Z"
+
+    _print_discussion_leaderboard([talk_revision], [article_revision])
+    output = capsys.readouterr().out
+    assert "discussion impact" in output
+    assert "reply centrality" in output
+    assert "Alice" in output
+    assert "Bob" in output
+    assert "temporal proxy, not proof of causation" in output

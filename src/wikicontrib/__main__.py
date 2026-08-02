@@ -84,11 +84,7 @@ def _run_analyze(
     refresh: bool = False,
     with_diff: bool = False,
 ) -> int:
-    """Fetch the article + talk history and report a summary.
-
-    Metric computation is layered on top of this in later stages of the
-    schedule; for now this proves the data pipeline works end-to-end.
-    """
+    """Fetch the article + talk history and report available impact metrics."""
     from .api import WikiAPIError
     from .store import RevisionStore
 
@@ -133,6 +129,8 @@ def _run_analyze(
     if with_diff:
         _print_volume_leaderboard(revisions)
         _print_persistence_leaderboard(revisions)
+        if history.has_talk:
+            _print_discussion_leaderboard(history.talk_revisions, revisions)
     return 0
 
 
@@ -191,6 +189,48 @@ def _print_persistence_leaderboard(revisions, limit: int = 15) -> None:
             f"{c.survival_rate * 100:>8.0f}%"
             f"{report.share_of_surviving(c.user) * 100:>6.1f}%"
         )
+
+
+def _print_discussion_leaderboard(
+    talk_revisions, article_revisions, limit: int = 15
+) -> None:
+    """Print Talk-page participation and reply-graph centrality."""
+    from .discussion import analyze_discussion
+
+    report = analyze_discussion(talk_revisions, article_revisions)
+    if not report.contributors:
+        print("\n  discussion impact  : no signed Talk-page posts parsed")
+        return
+
+    ranked = report.ranked()[:limit]
+    print(
+        f"\n  discussion impact — top {len(ranked)} of "
+        f"{len(report.contributors)} by reply centrality "
+        f"({len(report.threads)} threads, {report.total_posts} posts):"
+    )
+    header = (
+        f"    {'contributor':<22}{'posts':>6}{'starts':>7}"
+        f"{'sent':>6}{'recv':>6}{'rank':>8}{'linked':>8}"
+    )
+    print(header)
+    print("    " + "-" * (len(header) - 4))
+    for contributor in ranked:
+        print(
+            f"    {contributor.user[:21]:<22}{contributor.posts:>6}"
+            f"{contributor.threads_started:>7}{contributor.replies_made:>6}"
+            f"{contributor.replies_received:>6}"
+            f"{contributor.pagerank * 100:>7.1f}%"
+            f"{contributor.follow_up_edits:>8}"
+        )
+    if report.parse_rate < 1.0:
+        print(
+            f"    signature coverage: {report.total_posts}/{report.signatures_seen} "
+            "timestamp-shaped signatures attributed"
+        )
+    print(
+        "    linked = same-user article edits within 14 days after a post "
+        "(temporal proxy, not proof of causation)"
+    )
 
 
 if __name__ == "__main__":  # pragma: no cover
