@@ -141,9 +141,18 @@ class RevisionStore:
         *,
         max_revisions: int | None = 500,
         include_content: bool = False,
+        include_talk_content: bool | None = None,
         refresh: bool = False,
     ) -> PageHistory:
-        """Return the article history together with its discussion history."""
+        """Return the article history together with its discussion history.
+
+        ``include_talk_content`` can be enabled independently so discussion
+        analysis does not have to download every article revision's wikitext.
+        ``None`` preserves the historical behaviour of matching
+        ``include_content``.
+        """
+        if include_talk_content is None:
+            include_talk_content = include_content
         revisions = self.get_revisions(
             title,
             max_revisions=max_revisions,
@@ -153,7 +162,7 @@ class RevisionStore:
         talk_revisions = self.get_talk_revisions(
             title,
             max_revisions=max_revisions,
-            include_content=include_content,
+            include_content=include_talk_content,
             refresh=refresh,
         )
         return PageHistory(

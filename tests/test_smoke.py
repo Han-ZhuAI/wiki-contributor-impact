@@ -19,6 +19,12 @@ def test_parser_accepts_analyze_command():
     assert args.max_revisions == 10
 
 
+def test_parser_accepts_discussion_analysis():
+    parser = build_parser()
+    args = parser.parse_args(["analyze", "Alan Turing", "--with-discussion"])
+    assert args.with_discussion is True
+
+
 def test_parser_uses_safe_revision_cap_by_default():
     parser = build_parser()
     args = parser.parse_args(["analyze", "Alan Turing"])

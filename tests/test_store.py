@@ -31,9 +31,11 @@ class FakeClient:
     def __init__(self, pages):
         self.pages = pages  # title -> list[RawRevision] (or WikiAPIError)
         self.fetches = []
+        self.content_fetches = []
 
     def fetch_revisions(self, title, *, max_revisions=500, include_content=False):
         self.fetches.append(title)
+        self.content_fetches.append((title, include_content))
         result = self.pages.get(title)
         if result is None:
             raise WikiAPIError(f"page not found: {title!r}")
@@ -115,3 +117,12 @@ def test_page_history_without_talk(tmp_path):
     history = store.get_page_history("X")
     assert history.has_talk is False
     assert history.talk_participants == set()
+
+
+def test_page_history_can_fetch_only_talk_content(tmp_path):
+    pages = {"X": [_rev(1)], "Talk:X": [_rev(2, user="Bob")]}
+    store, client = make_store(tmp_path, pages)
+    store.get_page_history(
+        "X", include_content=False, include_talk_content=True
+    )
+    assert client.content_fetches == [("X", False), ("Talk:X", True)]

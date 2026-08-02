@@ -22,7 +22,7 @@ separate these behaviours instead of rewarding whoever clicked *Save* most often
 | **Volume** | How much text did the contributor add? | Net & gross words/bytes added per revision |
 | **Additive vs. maintenance** | Did they *create* content or *maintain* it? | Size delta, revert detection, edit-comment keywords, minor flag |
 | **Persistence / survival** | Did their text *stay* in the article? | Token survival across later revisions |
-| **Discussion impact** | Did they shape the *decisions*? | Talk-namespace participation: threads started, replies, activity linked to article edits |
+| **Discussion impact** | Did they shape the *decisions*? | Signed Talk-page comments, reply graph, weighted PageRank |
 
 These feed a configurable **composite impact score** and a per-contributor
 profile (a radar of the dimensions above) so contributors can be ranked and
@@ -38,9 +38,9 @@ full wikitext content. No scraping and no credentials are required.
 ## Status
 
 Under active development. The data pipeline, revision diffing, contributor
-volume, additive/maintenance classification, exact-revert detection and
-content-persistence metrics are implemented. Discussion-impact scoring and the
-composite model remain planned; see [SCHEDULE.md](SCHEDULE.md).
+volume, additive/maintenance classification, exact-revert detection,
+content-persistence metrics and Talk-page reply-graph PageRank are implemented.
+The composite model remains planned; see [SCHEDULE.md](SCHEDULE.md).
 
 ## Quick start
 
@@ -58,6 +58,19 @@ python -m wikicontrib analyze "Alan Turing" --all-revisions --with-diff
 ```
 
 Complete histories can be slow and large for heavily edited articles.
+
+Discussion analysis is independently opt-in. It downloads Talk-page wikitext,
+recovers signed comments from successive revisions, infers replies from
+indentation, and ranks participants by weighted PageRank:
+
+```bash
+python -m wikicontrib analyze "Alan Turing" --with-discussion
+```
+
+Reply-graph edges point from the replier to the contributor being answered, so
+PageRank measures whose comments attract engagement rather than who posts most.
+Unsigned prose is ignored unless another editor has supplied an
+`{{unsigned|user}}` attribution.
 
 ## Repository layout
 

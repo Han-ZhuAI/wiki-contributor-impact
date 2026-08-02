@@ -56,6 +56,14 @@ def build_parser() -> argparse.ArgumentParser:
             "(slower: downloads every revision's wikitext)"
         ),
     )
+    analyze.add_argument(
+        "--with-discussion",
+        action="store_true",
+        help=(
+            "parse Talk-page comments and rank discussion influence "
+            "with a reply-graph PageRank"
+        ),
+    )
     return parser
 
 
@@ -73,6 +81,7 @@ def main(argv: list[str] | None = None) -> int:
             None if args.all_revisions else args.max_revisions,
             refresh=args.refresh,
             with_diff=args.with_diff,
+            with_discussion=args.with_discussion,
         )
 
     return 0
@@ -83,6 +92,7 @@ def _run_analyze(
     max_revisions: int | None,
     refresh: bool = False,
     with_diff: bool = False,
+    with_discussion: bool = False,
 ) -> int:
     """Fetch the article + talk history and report a summary.
 
@@ -99,6 +109,7 @@ def _run_analyze(
             max_revisions=max_revisions,
             refresh=refresh,
             include_content=with_diff,
+            include_talk_content=with_discussion,
         )
     except WikiAPIError as exc:
         print(f"error: {exc}")
@@ -133,6 +144,8 @@ def _run_analyze(
     if with_diff:
         _print_volume_leaderboard(revisions)
         _print_persistence_leaderboard(revisions)
+    if with_discussion and history.has_talk:
+        _print_discussion_leaderboard(history.talk_revisions)
     return 0
 
 
@@ -190,6 +203,35 @@ def _print_persistence_leaderboard(revisions, limit: int = 15) -> None:
             f"    {c.user[:21]:<22}{c.words_introduced:>11}{c.words_surviving:>10}"
             f"{c.survival_rate * 100:>8.0f}%"
             f"{report.share_of_surviving(c.user) * 100:>6.1f}%"
+        )
+
+
+def _print_discussion_leaderboard(talk_revisions, limit: int = 15) -> None:
+    """Print Talk-page participation and reply-graph influence."""
+    from .talk import analyze_discussion
+
+    report = analyze_discussion(talk_revisions)
+    if not report.contributors:
+        print("\n  no attributable signed Talk-page comments detected")
+        return
+
+    ranked = report.ranked()[:limit]
+    print(
+        f"\n  discussion impact — top {len(ranked)} of "
+        f"{len(report.contributors)} by reply-graph PageRank "
+        f"({len(report.comments)} comments):"
+    )
+    header = (
+        f"    {'contributor':<22}{'comments':>9}{'started':>9}"
+        f"{'replies':>9}{'received':>10}{'rank':>9}"
+    )
+    print(header)
+    print("    " + "-" * (len(header) - 4))
+    for contributor in ranked:
+        print(
+            f"    {contributor.user[:21]:<22}{contributor.comments:>9}"
+            f"{contributor.threads_started:>9}{contributor.replies:>9}"
+            f"{contributor.replies_received:>10}{contributor.pagerank:>9.4f}"
         )
 
 
