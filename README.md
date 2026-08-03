@@ -42,7 +42,7 @@ volume, additive/maintenance classification, exact-revert detection and
 content-persistence metrics are implemented. Talk-page signatures, threads,
 replies, discussion centrality and post-to-edit temporal links are also
 measured. These signals are assembled into normalised per-contributor feature
-profiles; the weighted composite model remains planned. See
+profiles and an explainable, configurable weighted composite score. See
 [SCHEDULE.md](SCHEDULE.md).
 
 ## Quick start
@@ -83,9 +83,28 @@ preserves the raw evidence and adds four comparable `0..1` axes:
 | `discussion` | Reply-graph PageRank, relative to the article maximum |
 
 Counts use log scaling so one extreme editor does not visually flatten every
-other profile. The axes deliberately remain separate at this stage; Day 11
-adds explicit, configurable weights rather than hiding a ranking policy inside
-normalisation.
+other profile.
+
+## Composite impact scoring
+
+`wikicontrib.scoring.score_profiles` ranks the feature profiles with a weighted
+sum. The deliberately neutral default gives each axis a weight of `0.25`;
+callers can pass `ScoreWeights` to express a different research policy. Any
+non-negative scale is accepted and normalised to sum to one:
+
+```python
+from wikicontrib.scoring import ScoreWeights, score_profiles
+
+weights = ScoreWeights(volume=1, additive=1, persistence=2, discussion=1)
+impact = score_profiles(profiles, weights)
+print(impact.ranked[0].explanation)
+```
+
+The model reports the vector as well as the scalar. Each ranked result retains
+all four axis values, the normalised weights, every weighted term, and a short
+calculation explanation. Equal totals use username order as a deterministic
+tie-break; changing the weights can therefore change the rank, but never hides
+why it changed.
 
 ## Repository layout
 
