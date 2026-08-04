@@ -49,7 +49,7 @@ profiles and an explainable, configurable weighted composite score. See
 
 ```bash
 pip install -e .
-python -m wikicontrib analyze "Alan Turing" --with-diff
+python -m wikicontrib analyze "Alan Turing" --with-diff --output-json results/alan-turing.json
 ```
 
 The safe default analyzes the earliest 500 revisions and labels the result as a
@@ -63,11 +63,28 @@ python -m wikicontrib analyze "Alan Turing" --all-revisions --with-diff
 Complete histories can be slow and large for heavily edited articles.
 
 With `--with-diff`, the CLI prints separate volume, persistence, and discussion
-leaderboards. Discussion centrality uses a weighted reply graph: an edge points
+leaderboards followed by the four-axis composite ranking. Discussion centrality uses a weighted reply graph: an edge points
 from the replying user to the person whose comment they answered. The `linked`
 column counts same-user article edits within 14 days after a Talk post. This is
 reported as a temporal association rather than a claim that the post caused the
 edit.
+
+`--output-json PATH` (or `--json PATH`) writes the complete, ranked analysis and
+automatically enables revision-text processing. The export includes article
+scope metadata, normalised weights, raw contributor metrics, the four-axis
+feature vector, every weighted contribution, and the human-readable score
+explanation. Configure the ranking policy explicitly when needed:
+
+```bash
+python -m wikicontrib analyze "Alan Turing" --max-revisions 500 \
+  --weight-volume 1 --weight-additive 1 \
+  --weight-persistence 2 --weight-discussion 1 \
+  --output-json results/alan-turing.json
+```
+
+Weights accept any finite non-negative scale and are normalised to sum to one.
+Use `--top N` to change the number of terminal rows; JSON always retains every
+contributor.
 
 ## Contributor feature profiles
 
