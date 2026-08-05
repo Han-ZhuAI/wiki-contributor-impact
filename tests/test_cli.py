@@ -104,12 +104,15 @@ def test_parser_accepts_json_alias_weights_and_top_limit():
             "2",
             "--top",
             "7",
+            "--charts-dir",
+            "figures",
         ]
     )
     assert args.output_json == Path("result.json")
     assert args.weight_volume == 1.0
     assert args.weight_persistence == 2.0
     assert args.top == 7
+    assert args.charts_dir == Path("figures")
 
 
 @pytest.mark.parametrize("value", ["-1", "nan", "inf"])
@@ -230,3 +233,21 @@ def test_custom_cli_weights_are_normalised_in_output(monkeypatch, tmp_path):
         "persistence": 0.4,
         "discussion": 0.2,
     }
+
+
+def test_charts_dir_enables_content_analysis_and_writes_pngs(
+    monkeypatch, capsys, tmp_path
+):
+    store = FakeStore([_revision(1), _revision(2)])
+    monkeypatch.setattr("wikicontrib.store.RevisionStore", lambda: store)
+    charts_dir = tmp_path / "figures"
+
+    assert _run_analyze("Example", 2, charts_dir=charts_dir, limit=1) == 0
+
+    assert store.kwargs["include_content"] is True
+    output = capsys.readouterr().out
+    assert "charts generated  : 4" in output
+    assert (charts_dir / "impact_leaderboard.png").is_file()
+    assert (charts_dir / "additive_maintenance.png").is_file()
+    assert (charts_dir / "edit_timeline.png").is_file()
+    assert len(list((charts_dir / "radars").glob("*.png"))) == 1

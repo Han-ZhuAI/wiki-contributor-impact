@@ -42,7 +42,8 @@ volume, additive/maintenance classification, exact-revert detection and
 content-persistence metrics are implemented. Talk-page signatures, threads,
 replies, discussion centrality and post-to-edit temporal links are also
 measured. These signals are assembled into normalised per-contributor feature
-profiles and an explainable, configurable weighted composite score. See
+profiles and an explainable, configurable weighted composite score. The CLI
+exports complete JSON reports and reproducible PNG visual summaries. See
 [SCHEDULE.md](SCHEDULE.md).
 
 ## Quick start
@@ -85,6 +86,19 @@ python -m wikicontrib analyze "Alan Turing" --max-revisions 500 \
 Weights accept any finite non-negative scale and are normalised to sum to one.
 Use `--top N` to change the number of terminal rows; JSON always retains every
 contributor.
+
+Generate the complete visual summary with `--charts-dir`:
+
+```bash
+python -m wikicontrib analyze "Alan Turing" --max-revisions 500 \
+  --output-json results/alan-turing.json \
+  --charts-dir results/alan-turing-figures
+```
+
+The chart directory contains a stacked composite-impact leaderboard, an
+additive-versus-maintenance role chart, a monthly edit timeline, and radar
+profiles for the top five contributors. Every composite bar is split into its
+four weighted dimensions so the visual ranking remains explainable.
 
 ## Contributor feature profiles
 
