@@ -88,6 +88,15 @@ def build_parser() -> argparse.ArgumentParser:
         default=15,
         help="number of contributors to show in each terminal leaderboard",
     )
+    analyze.add_argument(
+        "--charts-dir",
+        type=Path,
+        metavar="DIR",
+        help=(
+            "write leaderboard, role, timeline, and contributor radar PNGs to DIR; "
+            "this automatically enables revision-text analysis"
+        ),
+    )
     for dimension in ("volume", "additive", "persistence", "discussion"):
         analyze.add_argument(
             f"--weight-{dimension}",
@@ -126,6 +135,7 @@ def main(argv: list[str] | None = None) -> int:
             with_diff=args.with_diff,
             weights=weights,
             output_json=args.output_json,
+            charts_dir=args.charts_dir,
             limit=args.top,
         )
 
@@ -139,13 +149,14 @@ def _run_analyze(
     with_diff: bool = False,
     weights=None,
     output_json: Path | None = None,
+    charts_dir: Path | None = None,
     limit: int = 15,
 ) -> int:
     """Fetch the article + talk history and report available impact metrics."""
     from .api import WikiAPIError
     from .store import RevisionStore
 
-    include_content = with_diff or output_json is not None
+    include_content = with_diff or output_json is not None or charts_dir is not None
     store = RevisionStore()
     try:
         history = store.get_page_history(
@@ -204,6 +215,24 @@ def _run_analyze(
         if history.has_talk:
             _print_discussion_report(discussion, limit)
         _print_impact_leaderboard(impact, limit)
+
+        if charts_dir is not None:
+            from .visualize import generate_visualizations
+
+            try:
+                manifest = generate_visualizations(
+                    history.title,
+                    revisions,
+                    profiles,
+                    impact,
+                    charts_dir,
+                    top_n=limit,
+                    radar_count=min(5, limit),
+                )
+            except (OSError, ValueError) as exc:
+                print(f"error: could not generate charts: {exc}")
+                return 1
+            print(f"\n  charts generated  : {len(manifest.all_paths)} in {charts_dir}")
 
         if output_json is not None:
             try:
