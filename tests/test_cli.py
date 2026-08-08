@@ -164,7 +164,7 @@ def test_json_export_enables_content_analysis_and_is_self_explaining(
     assert "JSON report" in output
 
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["schema_version"] == 1
+    assert payload["schema_version"] == 2
     assert payload["article"] == {
         "title": "Example",
         "talk_title": "Talk:Example",
@@ -181,6 +181,11 @@ def test_json_export_enables_content_analysis_and_is_self_explaining(
         "persistence": 0.25,
         "discussion": 0.25,
     }
+    assert payload["wikitext_elements"]["prose"] == {
+        "added": 3,
+        "removed": 0,
+        "net": 3,
+    }
     assert [row["rank"] for row in payload["contributors"]] == [1]
     contributor = payload["contributors"][0]
     assert contributor["user"] == "Alice"
@@ -196,6 +201,7 @@ def test_json_export_enables_content_analysis_and_is_self_explaining(
         "weighted_value",
     }
     assert "words_surviving" in contributor["raw_metrics"]
+    assert contributor["wikitext_elements"]["prose"]["added"] == 3
     assert "Breakdown:" in contributor["explanation"]
 
 

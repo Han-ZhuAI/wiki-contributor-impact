@@ -43,7 +43,9 @@ content-persistence metrics are implemented. Talk-page signatures, threads,
 replies, discussion centrality and post-to-edit temporal links are also
 measured. These signals are assembled into normalised per-contributor feature
 profiles and an explainable, configurable weighted composite score. The CLI
-exports complete JSON reports and reproducible PNG visual summaries. See
+also classifies changed words as prose, headings, references, templates,
+tables, categories, or links. It exports complete JSON reports and reproducible
+PNG visual summaries. See
 [SCHEDULE.md](SCHEDULE.md).
 
 ## Quick start
@@ -99,6 +101,16 @@ The chart directory contains a stacked composite-impact leaderboard, an
 additive-versus-maintenance role chart, a monthly edit timeline, and radar
 profiles for the top five contributors. Every composite bar is split into its
 four weighted dimensions so the visual ranking remains explainable.
+
+## Wikitext element classification
+
+Revision text is segmented into seven mutually exclusive semantic locations:
+`prose`, `heading`, `reference`, `template`, `table`, `category`, and `link`.
+The CLI reports added, removed, and net word-token deltas for each element, and
+the JSON export preserves both article-wide and per-contributor breakdowns.
+Nested constructs use a fixed precedence to avoid double-counting—for example,
+a link inside a reference remains reference content. HTML comments and markup
+punctuation do not contribute words.
 
 ## Contributor feature profiles
 
