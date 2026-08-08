@@ -197,6 +197,7 @@ def _run_analyze(
 
     if include_content:
         from .discussion import analyze_discussion
+        from .elements import aggregate_element_history
         from .metrics import aggregate_history
         from .persistence import track_persistence
         from .profile import assemble_profiles
@@ -207,11 +208,13 @@ def _run_analyze(
         discussion = analyze_discussion(
             history.talk_revisions if history.has_talk else [], revisions
         )
+        elements = aggregate_element_history(revisions)
         profiles = assemble_profiles(volume, persistence, discussion)
         impact = score_profiles(profiles, weights or ScoreWeights())
 
         _print_volume_report(volume, limit)
         _print_persistence_report(persistence, limit)
+        _print_element_report(elements)
         if history.has_talk:
             _print_discussion_report(discussion, limit)
         _print_impact_leaderboard(impact, limit)
@@ -242,6 +245,7 @@ def _run_analyze(
                     max_revisions,
                     profiles,
                     impact,
+                    elements,
                 )
             except OSError as exc:
                 print(f"error: could not write JSON report: {exc}")
@@ -392,13 +396,31 @@ def _print_impact_leaderboard(report, limit: int = 15) -> None:
     print("    score = weighted sum of the four displayed normalised axes")
 
 
-def _write_json_report(path, history, max_revisions, profiles, impact) -> None:
+def _print_element_report(report) -> None:
+    """Print article-wide semantic wikitext additions and removals."""
+    from .elements import ELEMENTS
+
+    print("\n  wikitext elements — semantic word deltas:")
+    print(f"    {'element':<14}{'added':>9}{'removed':>10}{'net':>9}")
+    print("    " + "-" * 42)
+    for element in ELEMENTS:
+        print(
+            f"    {element.value:<14}{report.total.added[element]:>9}"
+            f"{report.total.removed[element]:>10}{report.total.net(element):>+9}"
+        )
+
+
+def _write_json_report(
+    path, history, max_revisions, profiles, impact, elements
+) -> None:
     """Atomically write a reproducible, self-explaining JSON analysis report."""
+    from .elements import ElementDelta
+
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     capped = max_revisions is not None and len(history.revisions) >= max_revisions
     payload = {
-        "schema_version": 1,
+        "schema_version": 2,
         "article": {
             "title": history.title,
             "talk_title": getattr(history, "talk_title", None),
@@ -414,10 +436,12 @@ def _write_json_report(path, history, max_revisions, profiles, impact) -> None:
             "historical_slice": capped,
         },
         "weights": impact.weights.normalised,
+        "wikitext_elements": elements.total.as_dict(),
         "contributors": [],
     }
     for result in impact.ranked:
         profile = profiles.contributors[result.user]
+        contributor_elements = elements.contributors.get(result.user)
         payload["contributors"].append(
             {
                 "rank": result.rank,
@@ -436,6 +460,11 @@ def _write_json_report(path, history, max_revisions, profiles, impact) -> None:
                     for key, value in asdict(profile).items()
                     if key != "user" and not key.endswith("_score")
                 },
+                "wikitext_elements": (
+                    contributor_elements.delta.as_dict()
+                    if contributor_elements is not None
+                    else ElementDelta().as_dict()
+                ),
             }
         )
 
