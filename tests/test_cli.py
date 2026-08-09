@@ -9,6 +9,7 @@ import pytest
 from wikicontrib.__main__ import (
     _print_discussion_leaderboard,
     _run_analyze,
+    _run_evaluate,
     build_parser,
     main,
 )
@@ -113,6 +114,67 @@ def test_parser_accepts_json_alias_weights_and_top_limit():
     assert args.weight_persistence == 2.0
     assert args.top == 7
     assert args.charts_dir == Path("figures")
+
+
+def test_parser_accepts_multi_article_evaluation_outputs():
+    args = build_parser().parse_args(
+        [
+            "evaluate",
+            "Alan Turing",
+            "Kimchi",
+            "--max-revisions",
+            "50",
+            "--top-k",
+            "5",
+            "--output-json",
+            "evaluation.json",
+            "--output-markdown",
+            "evaluation.md",
+        ]
+    )
+    assert args.articles == ["Alan Turing", "Kimchi"]
+    assert args.max_revisions == 50
+    assert args.top_k == 5
+    assert args.output_json == Path("evaluation.json")
+    assert args.output_markdown == Path("evaluation.md")
+
+
+def test_evaluate_requires_two_articles():
+    with pytest.raises(SystemExit) as exc_info:
+        main(["evaluate", "Only one"])
+    assert exc_info.value.code == 2
+
+
+def test_evaluate_writes_cross_article_reports(monkeypatch, capsys, tmp_path):
+    class EvaluationStore:
+        def get_page_history(self, title, **kwargs):
+            first = _revision(1)
+            second = _revision(2)
+            second.user = "Bob" if title == "Second" else "Alice"
+            return SimpleNamespace(
+                title=title,
+                revisions=[first, second],
+                talk_revisions=[],
+            )
+
+    monkeypatch.setattr("wikicontrib.store.RevisionStore", EvaluationStore)
+    json_path = tmp_path / "evaluation.json"
+    markdown_path = tmp_path / "evaluation.md"
+    assert (
+        _run_evaluate(
+            ["First", "Second"],
+            2,
+            top_k=2,
+            output_json=json_path,
+            output_markdown=markdown_path,
+        )
+        == 0
+    )
+    output = capsys.readouterr().out
+    assert "weight-sensitivity evaluation" in output
+    assert "First" in output and "Second" in output
+    assert json.loads(json_path.read_text())["method"]["revision_limit"] == 2
+    assert markdown_path.is_file()
 
 
 @pytest.mark.parametrize("value", ["-1", "nan", "inf"])

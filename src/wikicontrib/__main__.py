@@ -105,6 +105,35 @@ def build_parser() -> argparse.ArgumentParser:
             metavar="N",
             help=f"non-negative {dimension} weight (default: 0.25)",
         )
+
+    evaluate = sub.add_parser(
+        "evaluate", help="compare composite-score weight policies across articles"
+    )
+    evaluate.add_argument("articles", nargs="+", help="two or more article titles")
+    evaluate.add_argument(
+        "--max-revisions",
+        type=_positive_int,
+        default=500,
+        help="evaluate the earliest N revisions of each article (default: 500)",
+    )
+    evaluate.add_argument(
+        "--refresh", action="store_true", help="ignore cached data and re-fetch"
+    )
+    evaluate.add_argument(
+        "--top-k",
+        type=_positive_int,
+        default=10,
+        help="top contributors used for overlap analysis (default: 10)",
+    )
+    evaluate.add_argument(
+        "--output-json", type=Path, metavar="PATH", help="write evaluation JSON"
+    )
+    evaluate.add_argument(
+        "--output-markdown",
+        type=Path,
+        metavar="PATH",
+        help="write report-ready Markdown tables",
+    )
     return parser
 
 
@@ -139,6 +168,86 @@ def main(argv: list[str] | None = None) -> int:
             limit=args.top,
         )
 
+    if args.command == "evaluate":
+        if len(args.articles) < 2:
+            parser.error("evaluate requires at least two article titles")
+        return _run_evaluate(
+            args.articles,
+            args.max_revisions,
+            refresh=args.refresh,
+            top_k=args.top_k,
+            output_json=args.output_json,
+            output_markdown=args.output_markdown,
+        )
+
+    return 0
+
+
+def _run_evaluate(
+    articles: list[str],
+    max_revisions: int | None,
+    *,
+    refresh: bool = False,
+    top_k: int = 10,
+    output_json: Path | None = None,
+    output_markdown: Path | None = None,
+) -> int:
+    """Fetch multiple real histories and report weight sensitivity."""
+    from .api import WikiAPIError
+    from .evaluation import (
+        EvaluationReport,
+        evaluate_article,
+        write_evaluation_json,
+        write_evaluation_markdown,
+    )
+    from .store import RevisionStore
+
+    store = RevisionStore()
+    evaluations = []
+    for article in articles:
+        try:
+            history = store.get_page_history(
+                article,
+                max_revisions=max_revisions,
+                refresh=refresh,
+                include_content=True,
+            )
+        except WikiAPIError as exc:
+            print(f"error: {article}: {exc}")
+            return 1
+        if not history.revisions:
+            print(f"error: no revisions found for {article!r}")
+            return 1
+        evaluations.append(
+            evaluate_article(
+                history.title,
+                history.revisions,
+                history.talk_revisions,
+                top_k=top_k,
+            )
+        )
+
+    report = EvaluationReport(tuple(evaluations), max_revisions)
+    print(f"[wikicontrib {__version__}] weight-sensitivity evaluation")
+    print(
+        f"  {'article':<30}{'editors':>9}{'balanced winner':>24}"
+        f"{'winners':>9}{'min overlap':>13}{'min rho':>10}"
+    )
+    print("  " + "-" * 95)
+    for evaluation in report.articles:
+        print(
+            f"  {evaluation.title[:29]:<30}{evaluation.contributor_count:>9}"
+            f"{evaluation.baseline_winner[:23]:>24}"
+            f"{len(evaluation.distinct_winners):>9}"
+            f"{evaluation.minimum_top_k_overlap:>13.3f}"
+            f"{evaluation.minimum_spearman_rho:>10.3f}"
+        )
+    if output_json is not None:
+        write_evaluation_json(report, output_json)
+        print(f"\n  evaluation JSON   : {output_json}")
+    if output_markdown is not None:
+        write_evaluation_markdown(report, output_markdown)
+        print(f"  evaluation report : {output_markdown}")
     return 0
 
 
