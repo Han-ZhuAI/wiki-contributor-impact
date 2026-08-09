@@ -1,0 +1,480 @@
+{
+  "schema_version": 1,
+  "method": {
+    "baseline": "equal weights across all four axes",
+    "alternatives": "double one axis while holding the others at one",
+    "metrics": [
+      "top-k overlap",
+      "Spearman rank correlation",
+      "mean absolute rank shift",
+      "maximum rank shift"
+    ],
+    "revision_limit": 50,
+    "historical_slice": true,
+    "automated_account_heuristic": "username contains bot/script or an edit comment explicitly says automated/bot; candidates require manual verification"
+  },
+  "articles": [
+    {
+      "title": "Alan Turing",
+      "revision_count": 50,
+      "talk_revision_count": 50,
+      "contributor_count": 47,
+      "top_k": 10,
+      "baseline_winner": "Conversion script",
+      "automated_account_candidates": [
+        "Conversion script",
+        "The Anomebot"
+      ],
+      "baseline_winner_is_automated_candidate": true,
+      "distinct_winners": [
+        "Conversion script",
+        "Raul654"
+      ],
+      "minimum_top_k_overlap": 0.8,
+      "minimum_spearman_rho": 0.95131822386679,
+      "policies": [
+        {
+          "policy": "balanced",
+          "weights": {
+            "volume": 0.25,
+            "additive": 0.25,
+            "persistence": 0.25,
+            "discussion": 0.25
+          },
+          "winner": "Conversion script",
+          "winner_score": 0.75,
+          "top_contributors": [
+            "Conversion script",
+            "Raul654",
+            "Manning Bartlett",
+            "LouI",
+            "Oliver Pereira",
+            "Morwen",
+            "203.45.10.97",
+            "80.3.0.5",
+            "Nanshu",
+            "Pde"
+          ],
+          "top_k_overlap": 1.0,
+          "spearman_rho": 1.0,
+          "mean_absolute_rank_shift": 0.0,
+          "maximum_rank_shift": 0
+        },
+        {
+          "policy": "volume_emphasis",
+          "weights": {
+            "volume": 0.4,
+            "additive": 0.2,
+            "persistence": 0.2,
+            "discussion": 0.2
+          },
+          "winner": "Conversion script",
+          "winner_score": 0.8,
+          "top_contributors": [
+            "Conversion script",
+            "Manning Bartlett",
+            "Raul654",
+            "Oliver Pereira",
+            "LouI",
+            "Morwen",
+            "203.45.10.97",
+            "80.3.0.5",
+            "128.193.88.121",
+            "AxelBoldt"
+          ],
+          "top_k_overlap": 0.8,
+          "spearman_rho": 0.9826549491211841,
+          "mean_absolute_rank_shift": 1.7446808510638299,
+          "maximum_rank_shift": 6
+        },
+        {
+          "policy": "additive_emphasis",
+          "weights": {
+            "volume": 0.2,
+            "additive": 0.4,
+            "persistence": 0.2,
+            "discussion": 0.2
+          },
+          "winner": "Conversion script",
+          "winner_score": 0.8,
+          "top_contributors": [
+            "Conversion script",
+            "Raul654",
+            "Manning Bartlett",
+            "LouI",
+            "Oliver Pereira",
+            "Morwen",
+            "203.45.10.97",
+            "80.3.0.5",
+            "Nanshu",
+            "Pde"
+          ],
+          "top_k_overlap": 1.0,
+          "spearman_rho": 1.0,
+          "mean_absolute_rank_shift": 0.0,
+          "maximum_rank_shift": 0
+        },
+        {
+          "policy": "persistence_emphasis",
+          "weights": {
+            "volume": 0.2,
+            "additive": 0.2,
+            "persistence": 0.4,
+            "discussion": 0.2
+          },
+          "winner": "Conversion script",
+          "winner_score": 0.8,
+          "top_contributors": [
+            "Conversion script",
+            "Manning Bartlett",
+            "Raul654",
+            "LouI",
+            "Oliver Pereira",
+            "Morwen",
+            "203.45.10.97",
+            "80.3.0.5",
+            "AxelBoldt",
+            "Nanshu"
+          ],
+          "top_k_overlap": 0.9,
+          "spearman_rho": 0.9924838112858464,
+          "mean_absolute_rank_shift": 0.9787234042553191,
+          "maximum_rank_shift": 6
+        },
+        {
+          "policy": "discussion_emphasis",
+          "weights": {
+            "volume": 0.2,
+            "additive": 0.2,
+            "persistence": 0.2,
+            "discussion": 0.4
+          },
+          "winner": "Raul654",
+          "winner_score": 0.773569024357731,
+          "top_contributors": [
+            "Raul654",
+            "Conversion script",
+            "Manning Bartlett",
+            "LouI",
+            "Oliver Pereira",
+            "Morwen",
+            "203.45.10.97",
+            "Beland",
+            "80.3.0.5",
+            "Heron"
+          ],
+          "top_k_overlap": 0.8,
+          "spearman_rho": 0.95131822386679,
+          "mean_absolute_rank_shift": 2.723404255319149,
+          "maximum_rank_shift": 11
+        }
+      ]
+    },
+    {
+      "title": "Kimchi",
+      "revision_count": 50,
+      "talk_revision_count": 50,
+      "contributor_count": 41,
+      "top_k": 10,
+      "baseline_winner": "Kokiri",
+      "automated_account_candidates": [],
+      "baseline_winner_is_automated_candidate": false,
+      "distinct_winners": [
+        "Kokiri"
+      ],
+      "minimum_top_k_overlap": 0.9,
+      "minimum_spearman_rho": 0.9412891986062718,
+      "policies": [
+        {
+          "policy": "balanced",
+          "weights": {
+            "volume": 0.25,
+            "additive": 0.25,
+            "persistence": 0.25,
+            "discussion": 0.25
+          },
+          "winner": "Kokiri",
+          "winner_score": 0.787913520115638,
+          "top_contributors": [
+            "Kokiri",
+            "Menchi",
+            "Lukobe",
+            "171.75.44.70",
+            "194.25.15.11",
+            "Dgrant",
+            "Ce garcon",
+            "Sewing",
+            "Kowloonese",
+            "Tomchiukc"
+          ],
+          "top_k_overlap": 1.0,
+          "spearman_rho": 1.0,
+          "mean_absolute_rank_shift": 0.0,
+          "maximum_rank_shift": 0
+        },
+        {
+          "policy": "volume_emphasis",
+          "weights": {
+            "volume": 0.4,
+            "additive": 0.2,
+            "persistence": 0.2,
+            "discussion": 0.2
+          },
+          "winner": "Kokiri",
+          "winner_score": 0.8273282988516875,
+          "top_contributors": [
+            "Kokiri",
+            "Menchi",
+            "Lukobe",
+            "171.75.44.70",
+            "Dgrant",
+            "194.25.15.11",
+            "Ce garcon",
+            "Sewing",
+            "Tomchiukc",
+            "62.178.137.216"
+          ],
+          "top_k_overlap": 0.9,
+          "spearman_rho": 0.9498257839721255,
+          "mean_absolute_rank_shift": 2.5365853658536586,
+          "maximum_rank_shift": 11
+        },
+        {
+          "policy": "additive_emphasis",
+          "weights": {
+            "volume": 0.2,
+            "additive": 0.4,
+            "persistence": 0.2,
+            "discussion": 0.2
+          },
+          "winner": "Kokiri",
+          "winner_score": 0.6636641494258437,
+          "top_contributors": [
+            "Kokiri",
+            "Menchi",
+            "Lukobe",
+            "171.75.44.70",
+            "194.25.15.11",
+            "Dgrant",
+            "Ce garcon",
+            "Sewing",
+            "Kowloonese",
+            "Tomchiukc"
+          ],
+          "top_k_overlap": 1.0,
+          "spearman_rho": 1.0,
+          "mean_absolute_rank_shift": 0.0,
+          "maximum_rank_shift": 0
+        },
+        {
+          "policy": "persistence_emphasis",
+          "weights": {
+            "volume": 0.2,
+            "additive": 0.2,
+            "persistence": 0.4,
+            "discussion": 0.2
+          },
+          "winner": "Kokiri",
+          "winner_score": 0.8303308160925105,
+          "top_contributors": [
+            "Kokiri",
+            "Menchi",
+            "Lukobe",
+            "171.75.44.70",
+            "194.25.15.11",
+            "Ce garcon",
+            "Tomchiukc",
+            "Sewing",
+            "62.178.137.216",
+            "Dgrant"
+          ],
+          "top_k_overlap": 0.9,
+          "spearman_rho": 0.9759581881533101,
+          "mean_absolute_rank_shift": 1.7073170731707317,
+          "maximum_rank_shift": 6
+        },
+        {
+          "policy": "discussion_emphasis",
+          "weights": {
+            "volume": 0.2,
+            "additive": 0.2,
+            "persistence": 0.2,
+            "discussion": 0.4
+          },
+          "winner": "Kokiri",
+          "winner_score": 0.8303308160925105,
+          "top_contributors": [
+            "Kokiri",
+            "Menchi",
+            "Lukobe",
+            "Kowloonese",
+            "171.75.44.70",
+            "194.25.15.11",
+            "Dgrant",
+            "Ce garcon",
+            "Sewing",
+            "Heesung"
+          ],
+          "top_k_overlap": 0.9,
+          "spearman_rho": 0.9412891986062718,
+          "mean_absolute_rank_shift": 3.024390243902439,
+          "maximum_rank_shift": 11
+        }
+      ]
+    },
+    {
+      "title": "Python (programming language)",
+      "revision_count": 50,
+      "talk_revision_count": 50,
+      "contributor_count": 29,
+      "top_k": 10,
+      "baseline_winner": "Fubar Obfusco",
+      "automated_account_candidates": [
+        "Conversion script"
+      ],
+      "baseline_winner_is_automated_candidate": false,
+      "distinct_winners": [
+        "Fubar Obfusco"
+      ],
+      "minimum_top_k_overlap": 0.8,
+      "minimum_spearman_rho": 0.9408866995073891,
+      "policies": [
+        {
+          "policy": "balanced",
+          "weights": {
+            "volume": 0.25,
+            "additive": 0.25,
+            "persistence": 0.25,
+            "discussion": 0.25
+          },
+          "winner": "Fubar Obfusco",
+          "winner_score": 0.8153356481482954,
+          "top_contributors": [
+            "Fubar Obfusco",
+            "Kragen",
+            "67.192.39.252",
+            "130.94.122.xxx",
+            "Hfastedge",
+            "128.250.6.134",
+            "Eric B. and Rakim",
+            "Matthew Woodcraft",
+            "216.153.214.94",
+            "207.172.11.xxx"
+          ],
+          "top_k_overlap": 1.0,
+          "spearman_rho": 1.0,
+          "mean_absolute_rank_shift": 0.0,
+          "maximum_rank_shift": 0
+        },
+        {
+          "policy": "volume_emphasis",
+          "weights": {
+            "volume": 0.4,
+            "additive": 0.2,
+            "persistence": 0.2,
+            "discussion": 0.2
+          },
+          "winner": "Fubar Obfusco",
+          "winner_score": 0.8522685185186364,
+          "top_contributors": [
+            "Fubar Obfusco",
+            "Kragen",
+            "Hfastedge",
+            "67.192.39.252",
+            "130.94.122.xxx",
+            "128.250.6.134",
+            "Matthew Woodcraft",
+            "Eric B. and Rakim",
+            "207.172.11.xxx",
+            "Conversion script"
+          ],
+          "top_k_overlap": 0.9,
+          "spearman_rho": 0.9413793103448276,
+          "mean_absolute_rank_shift": 1.7241379310344827,
+          "maximum_rank_shift": 8
+        },
+        {
+          "policy": "additive_emphasis",
+          "weights": {
+            "volume": 0.2,
+            "additive": 0.4,
+            "persistence": 0.2,
+            "discussion": 0.2
+          },
+          "winner": "Fubar Obfusco",
+          "winner_score": 0.7856018518519697,
+          "top_contributors": [
+            "Fubar Obfusco",
+            "Kragen",
+            "67.192.39.252",
+            "130.94.122.xxx",
+            "Hfastedge",
+            "128.250.6.134",
+            "Eric B. and Rakim",
+            "Matthew Woodcraft",
+            "216.153.214.94",
+            "207.172.11.xxx"
+          ],
+          "top_k_overlap": 1.0,
+          "spearman_rho": 1.0,
+          "mean_absolute_rank_shift": 0.0,
+          "maximum_rank_shift": 0
+        },
+        {
+          "policy": "persistence_emphasis",
+          "weights": {
+            "volume": 0.2,
+            "additive": 0.2,
+            "persistence": 0.4,
+            "discussion": 0.2
+          },
+          "winner": "Fubar Obfusco",
+          "winner_score": 0.8522685185186364,
+          "top_contributors": [
+            "Fubar Obfusco",
+            "Kragen",
+            "Hfastedge",
+            "67.192.39.252",
+            "130.94.122.xxx",
+            "128.250.6.134",
+            "Matthew Woodcraft",
+            "Eric B. and Rakim",
+            "207.172.11.xxx",
+            "Conversion script"
+          ],
+          "top_k_overlap": 0.9,
+          "spearman_rho": 0.9408866995073891,
+          "mean_absolute_rank_shift": 1.7241379310344827,
+          "maximum_rank_shift": 8
+        },
+        {
+          "policy": "discussion_emphasis",
+          "weights": {
+            "volume": 0.2,
+            "additive": 0.2,
+            "persistence": 0.2,
+            "discussion": 0.4
+          },
+          "winner": "Fubar Obfusco",
+          "winner_score": 0.7712037037039393,
+          "top_contributors": [
+            "Fubar Obfusco",
+            "Kragen",
+            "Eric B. and Rakim",
+            "67.192.39.252",
+            "130.94.122.xxx",
+            "Hfastedge",
+            "216.153.214.94",
+            "Dcoetzee",
+            "Antaeus Feldspar",
+            "128.250.6.134"
+          ],
+          "top_k_overlap": 0.8,
+          "spearman_rho": 0.9645320197044335,
+          "mean_absolute_rank_shift": 1.5172413793103448,
+          "maximum_rank_shift": 7
+        }
+      ]
+    }
+  ]
+}

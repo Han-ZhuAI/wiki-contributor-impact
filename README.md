@@ -149,6 +149,25 @@ calculation explanation. Equal totals use username order as a deterministic
 tie-break; changing the weights can therefore change the rank, but never hides
 why it changed.
 
+## Cross-article evaluation
+
+Use `evaluate` to compare the balanced ranking with volume-, additive-,
+persistence-, and discussion-emphasis policies across multiple real articles:
+
+```bash
+python -m wikicontrib evaluate "Alan Turing" "Kimchi" \
+  "Python (programming language)" --max-revisions 50 \
+  --output-json report/evaluation.json \
+  --output-markdown report/evaluation.md
+```
+
+The evaluation reports winner changes, top-k overlap, Spearman rank
+correlation, mean absolute rank shift, and maximum rank shift. These are
+sensitivity diagnostics rather than ground-truth accuracy claims; capped runs
+remain explicitly described as historical slices. A transparent username/edit-
+comment heuristic also flags possible automated accounts for manual review; it
+does not silently remove them from the ranking.
+
 ## Repository layout
 
 ```
