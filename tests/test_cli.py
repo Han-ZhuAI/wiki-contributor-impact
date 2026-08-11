@@ -107,6 +107,7 @@ def test_parser_accepts_json_alias_weights_and_top_limit():
             "7",
             "--charts-dir",
             "figures",
+            "--exclude-automated-candidates",
         ]
     )
     assert args.output_json == Path("result.json")
@@ -114,6 +115,7 @@ def test_parser_accepts_json_alias_weights_and_top_limit():
     assert args.weight_persistence == 2.0
     assert args.top == 7
     assert args.charts_dir == Path("figures")
+    assert args.exclude_automated_candidates is True
 
 
 def test_parser_accepts_multi_article_evaluation_outputs():
@@ -226,7 +228,12 @@ def test_json_export_enables_content_analysis_and_is_self_explaining(
     assert "JSON report" in output
 
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["schema_version"] == 2
+    assert payload["schema_version"] == 3
+    assert payload["automation"]["candidates"] == []
+    assert payload["ranking"] == {
+        "excluded_users": [],
+        "history_and_provenance_preserved": True,
+    }
     assert payload["article"] == {
         "title": "Example",
         "talk_title": "Talk:Example",
@@ -301,6 +308,30 @@ def test_custom_cli_weights_are_normalised_in_output(monkeypatch, tmp_path):
         "persistence": 0.4,
         "discussion": 0.2,
     }
+
+
+def test_automation_filter_is_explicit_and_preserves_history(monkeypatch, capsys):
+    bot = _revision(1)
+    bot.user = "ImportBot"
+    human = _revision(2)
+    human.user = "Alice"
+    store = FakeStore([bot, human])
+    monkeypatch.setattr("wikicontrib.store.RevisionStore", lambda: store)
+
+    assert (
+        _run_analyze(
+            "Example",
+            2,
+            exclude_automated_candidates=True,
+        )
+        == 0
+    )
+
+    output = capsys.readouterr().out
+    assert store.kwargs["include_content"] is True
+    assert "ImportBot: confidence=high" in output
+    assert "excluded from composite ranking: ImportBot" in output
+    assert "all revisions remain in diff and provenance calculations" in output
 
 
 def test_charts_dir_enables_content_analysis_and_writes_pngs(

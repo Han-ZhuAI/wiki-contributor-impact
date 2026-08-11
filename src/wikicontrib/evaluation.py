@@ -15,12 +15,12 @@ from __future__ import annotations
 
 import json
 import os
-import re
 from dataclasses import dataclass
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 from .api import RawRevision
+from .automation import AutomationReport, detect_automation_candidates
 from .profile import ProfileReport, build_profiles
 from .scoring import ScoreWeights, score_profiles
 
@@ -41,6 +41,8 @@ class PolicyEvaluation:
     weights: dict[str, float]
     winner: str
     winner_score: float
+    automation_filtered_winner: str | None
+    automation_filtered_winner_score: float | None
     top_contributors: tuple[str, ...]
     top_k_overlap: float
     spearman_rho: float
@@ -53,6 +55,12 @@ class PolicyEvaluation:
             "weights": self.weights,
             "winner": self.winner,
             "winner_score": self.winner_score,
+            "automation_filtered_winner": self.automation_filtered_winner,
+            "automation_filtered_winner_score": self.automation_filtered_winner_score,
+            "winner_changes_after_automation_filter": (
+                self.automation_filtered_winner is not None
+                and self.winner != self.automation_filtered_winner
+            ),
             "top_contributors": list(self.top_contributors),
             "top_k_overlap": self.top_k_overlap,
             "spearman_rho": self.spearman_rho,
@@ -71,8 +79,21 @@ class ArticleEvaluation:
     contributor_count: int
     top_k: int
     baseline_winner: str
-    automated_account_candidates: tuple[str, ...]
+    automation: AutomationReport
     policies: tuple[PolicyEvaluation, ...]
+
+    @property
+    def automated_account_candidates(self) -> tuple[str, ...]:
+        """All high-confidence and review-only candidates, for compatibility."""
+        return self.automation.candidate_users
+
+    @property
+    def excluded_automated_candidates(self) -> tuple[str, ...]:
+        return self.automation.exclusion_candidates
+
+    @property
+    def baseline_automation_filtered_winner(self) -> str | None:
+        return self.policies[0].automation_filtered_winner if self.policies else None
 
     @property
     def distinct_winners(self) -> tuple[str, ...]:
@@ -88,7 +109,7 @@ class ArticleEvaluation:
 
     @property
     def baseline_winner_is_automated_candidate(self) -> bool:
-        return self.baseline_winner in self.automated_account_candidates
+        return self.baseline_winner in self.excluded_automated_candidates
 
     def as_dict(self) -> dict:
         return {
@@ -98,7 +119,12 @@ class ArticleEvaluation:
             "contributor_count": self.contributor_count,
             "top_k": self.top_k,
             "baseline_winner": self.baseline_winner,
+            "baseline_automation_filtered_winner": (
+                self.baseline_automation_filtered_winner
+            ),
+            "automation": self.automation.as_dict(),
             "automated_account_candidates": list(self.automated_account_candidates),
+            "excluded_automated_candidates": list(self.excluded_automated_candidates),
             "baseline_winner_is_automated_candidate": (
                 self.baseline_winner_is_automated_candidate
             ),
@@ -118,7 +144,7 @@ class EvaluationReport:
 
     def as_dict(self) -> dict:
         return {
-            "schema_version": 1,
+            "schema_version": 2,
             "method": {
                 "baseline": "equal weights across all four axes",
                 "alternatives": "double one axis while holding the others at one",
@@ -130,9 +156,10 @@ class EvaluationReport:
                 ],
                 "revision_limit": self.revision_limit,
                 "historical_slice": self.revision_limit is not None,
-                "automated_account_heuristic": (
-                    "username contains bot/script or an edit comment explicitly "
-                    "says automated/bot; candidates require manual verification"
+                "automation_handling": (
+                    "compare the full ranking with an opt-in ranking that omits "
+                    "high-confidence username candidates; keep all revisions in "
+                    "diff and provenance calculations"
                 ),
             },
             "articles": [article.as_dict() for article in self.articles],
@@ -166,13 +193,14 @@ class EvaluationReport:
                         f"**{article.baseline_winner}**."
                     ),
                     "",
-                    "| Policy | Winner | Top-k overlap | Spearman ρ | Mean shift | Max shift |",
-                    "|---|---|---:|---:|---:|---:|",
+                    "| Policy | All-account winner | Filtered winner | Top-k overlap | Spearman ρ | Mean shift | Max shift |",
+                    "|---|---|---|---:|---:|---:|---:|",
                 ]
             )
             for policy in article.policies:
                 lines.append(
                     f"| {policy.policy} | {policy.winner} | "
+                    f"{policy.automation_filtered_winner or 'none'} | "
                     f"{policy.top_k_overlap:.3f} | {policy.spearman_rho:.3f} | "
                     f"{policy.mean_absolute_rank_shift:.2f} | "
                     f"{policy.maximum_rank_shift} |"
@@ -190,12 +218,20 @@ class EvaluationReport:
                 ]
             )
             candidates = ", ".join(article.automated_account_candidates) or "none"
-            lines.append(f"Automated-account heuristic candidates: {candidates}.")
+            excluded = ", ".join(article.excluded_automated_candidates) or "none"
+            lines.append(f"Automated-account review candidates: {candidates}.")
+            lines.append(f"High-confidence ranking exclusions: {excluded}.")
+            for candidate in article.automation.candidates:
+                lines.append(
+                    f"- {candidate.user}: confidence={candidate.confidence}; "
+                    f"signals={', '.join(candidate.reasons)}; evidence revisions="
+                    f"{', '.join(str(value) for value in candidate.evidence_revision_ids)}"
+                )
             if article.baseline_winner_is_automated_candidate:
                 lines.append(
-                    "**Face-validity warning:** the balanced winner matches the "
-                    "automation heuristic; do not interpret this as human impact "
-                    "until the account and import history are reviewed."
+                    "**Ranking comparison:** the balanced all-account winner is a "
+                    "high-confidence automation candidate; the filtered winner is "
+                    f"**{article.baseline_automation_filtered_winner}**."
                 )
             lines.append("")
         lines.extend(
@@ -206,6 +242,7 @@ class EvaluationReport:
                 "- Capped runs describe historical slices and must not be presented as current-article results.",
                 "- Talk signatures and temporal post-to-edit links are incomplete proxies, not causal evidence.",
                 "- Face-validity findings should be checked against editor histories before drawing conclusions.",
+                "- Automation filtering changes only ranking eligibility; it never deletes revisions or rewrites provenance.",
                 "",
             ]
         )
@@ -222,6 +259,7 @@ def evaluate_article(
 ) -> ArticleEvaluation:
     """Build contributor profiles and evaluate reasonable weight policies."""
     profiles = build_profiles(article_revisions, talk_revisions)
+    automation = detect_automation_candidates(article_revisions, talk_revisions)
     return evaluate_profiles(
         title,
         profiles,
@@ -229,7 +267,7 @@ def evaluate_article(
         talk_revision_count=len(talk_revisions or []),
         top_k=top_k,
         policies=policies,
-        automated_account_candidates=_find_automated_candidates(article_revisions),
+        automation=automation,
     )
 
 
@@ -241,7 +279,7 @@ def evaluate_profiles(
     talk_revision_count: int = 0,
     top_k: int = 10,
     policies: tuple[tuple[str, ScoreWeights], ...] = DEFAULT_POLICIES,
-    automated_account_candidates: tuple[str, ...] = (),
+    automation: AutomationReport | None = None,
 ) -> ArticleEvaluation:
     """Evaluate already-built profiles; useful for tests and notebooks."""
     if not profiles.contributors:
@@ -251,15 +289,30 @@ def evaluate_profiles(
     if not policies or policies[0][0] != "balanced":
         raise ValueError("the first policy must be the balanced baseline")
 
+    automation = automation or AutomationReport()
     reports = [(name, score_profiles(profiles, weights)) for name, weights in policies]
+    filtered_reports = [
+        (
+            name,
+            score_profiles(
+                profiles,
+                weights,
+                excluded_users=automation.exclusion_candidates,
+            ),
+        )
+        for name, weights in policies
+    ]
     baseline = reports[0][1]
     baseline_ranks = {result.user: result.rank for result in baseline.ranked}
     effective_top_k = min(top_k, len(baseline_ranks))
     baseline_top = tuple(result.user for result in baseline.ranked[:effective_top_k])
 
     results: list[PolicyEvaluation] = []
-    for name, report in reports:
+    for (name, report), (_, filtered_report) in zip(
+        reports, filtered_reports, strict=True
+    ):
         ranked = report.ranked
+        filtered_ranked = filtered_report.ranked
         ranks = {result.user: result.rank for result in ranked}
         top = tuple(result.user for result in ranked[:effective_top_k])
         shifts = [abs(baseline_ranks[user] - ranks[user]) for user in baseline_ranks]
@@ -269,6 +322,12 @@ def evaluate_profiles(
                 weights=report.weights.normalised,
                 winner=ranked[0].user,
                 winner_score=ranked[0].score,
+                automation_filtered_winner=(
+                    filtered_ranked[0].user if filtered_ranked else None
+                ),
+                automation_filtered_winner_score=(
+                    filtered_ranked[0].score if filtered_ranked else None
+                ),
                 top_contributors=top,
                 top_k_overlap=(
                     len(set(baseline_top) & set(top)) / effective_top_k
@@ -288,7 +347,7 @@ def evaluate_profiles(
         contributor_count=len(profiles.contributors),
         top_k=effective_top_k,
         baseline_winner=baseline.ranked[0].user,
-        automated_account_candidates=tuple(sorted(automated_account_candidates)),
+        automation=automation,
         policies=tuple(results),
     )
 
@@ -317,24 +376,6 @@ def _spearman_from_ranks(
         (baseline[user] - alternative[user]) ** 2 for user in baseline
     )
     return 1.0 - (6.0 * squared_difference) / (count * (count**2 - 1))
-
-
-_AUTOMATED_USER_RE = re.compile(r"(?:\bbot\b|bot$|\bscript\b)", re.IGNORECASE)
-_AUTOMATED_COMMENT_RE = re.compile(r"(?:\bautomated\b|\bbot\b)", re.IGNORECASE)
-
-
-def _find_automated_candidates(revisions: list[RawRevision]) -> tuple[str, ...]:
-    """Flag auditable automation candidates without silently excluding them."""
-    candidates = {
-        revision.user
-        for revision in revisions
-        if revision.user
-        and (
-            _AUTOMATED_USER_RE.search(revision.user)
-            or _AUTOMATED_COMMENT_RE.search(revision.comment)
-        )
-    }
-    return tuple(sorted(candidates))
 
 
 def _atomic_write(path: Path, content: str) -> Path:

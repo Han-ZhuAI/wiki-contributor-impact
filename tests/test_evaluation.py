@@ -5,6 +5,7 @@ import json
 import pytest
 
 from wikicontrib.api import RawRevision
+from wikicontrib.automation import AutomationCandidate, AutomationReport
 from wikicontrib.evaluation import (
     EvaluationReport,
     evaluate_article,
@@ -74,7 +75,7 @@ def test_json_and_markdown_outputs_are_self_explaining(tmp_path):
     markdown_path = write_evaluation_markdown(report, tmp_path / "evaluation.md")
 
     payload = json.loads(json_path.read_text(encoding="utf-8"))
-    assert payload["schema_version"] == 1
+    assert payload["schema_version"] == 2
     assert payload["method"]["historical_slice"] is True
     assert payload["articles"][0]["revision_count"] == 50
     assert len(payload["articles"][0]["policies"]) == 5
@@ -102,3 +103,30 @@ def test_real_revision_evaluation_flags_automated_winner():
     result = evaluate_article("Example", [revision])
     assert result.automated_account_candidates == ("Conversion script",)
     assert result.baseline_winner_is_automated_candidate is True
+    assert result.baseline_automation_filtered_winner is None
+
+
+def test_evaluation_compares_all_account_and_automation_filtered_winners():
+    profiles = ProfileReport(
+        {
+            "ImportBot": _profile("ImportBot", volume=1.0, persistence=1.0),
+            "Alice": _profile("Alice", volume=0.8, persistence=0.8),
+        }
+    )
+    automation = AutomationReport(
+        (
+            AutomationCandidate(
+                user="ImportBot",
+                confidence="high",
+                reasons=("username_bot_marker",),
+                evidence_revision_ids=(1,),
+            ),
+        )
+    )
+
+    result = evaluate_profiles("Example", profiles, automation=automation)
+
+    assert result.baseline_winner == "ImportBot"
+    assert result.baseline_automation_filtered_winner == "Alice"
+    assert result.policies[0].as_dict()["winner_changes_after_automation_filter"]
+    assert result.as_dict()["automation"]["exclusion_candidates"] == ["ImportBot"]
