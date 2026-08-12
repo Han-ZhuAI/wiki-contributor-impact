@@ -1,5 +1,7 @@
 # Wiki Contributor Impact Model
 
+[![CI](https://github.com/Han-ZhuAI/wiki-contributor-impact/actions/workflows/ci.yml/badge.svg)](https://github.com/Han-ZhuAI/wiki-contributor-impact/actions/workflows/ci.yml)
+
 A **data-driven computational model** for assessing the impact of individual
 contributors on the collaborative formation of a Wikipedia entry.
 
@@ -47,6 +49,19 @@ also classifies changed words as prose, headings, references, templates,
 tables, categories, or links. It exports complete JSON reports and reproducible
 PNG visual summaries. See
 [SCHEDULE.md](SCHEDULE.md).
+
+Every push and pull request is checked on Python 3.10 and 3.12. The CI workflow
+runs static checks, compiles the package and tests, executes the full test suite,
+and rejects coverage below 95%.
+
+Reproduce the same checks locally with:
+
+```bash
+pip install -e ".[dev]"
+ruff check src tests
+python -m compileall -q src tests
+pytest -q --cov=wikicontrib --cov-report=term-missing --cov-fail-under=95
+```
 
 ## Quick start
 

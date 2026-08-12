@@ -92,8 +92,7 @@ class ContributorVolume:
             self.maintenance_edits += 1
         if not self.first_edit or diff.timestamp < self.first_edit:
             self.first_edit = diff.timestamp
-        if diff.timestamp > self.last_edit:
-            self.last_edit = diff.timestamp
+        self.last_edit = max(self.last_edit, diff.timestamp)
 
 
 @dataclass

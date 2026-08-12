@@ -23,8 +23,9 @@ Reference: https://www.mediawiki.org/wiki/API:Revisions
 from __future__ import annotations
 
 import time
+from collections.abc import Iterator
 from dataclasses import dataclass, field
-from typing import Any, Iterator
+from typing import Any
 
 import requests
 
@@ -71,7 +72,7 @@ class RawRevision:
     extra: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def from_api(cls, rev: dict[str, Any]) -> "RawRevision":
+    def from_api(cls, rev: dict[str, Any]) -> RawRevision:
         # ``texthidden``/``userhidden`` etc. appear as empty-string keys when a
         # field has been suppressed; treat those as missing.
         user = rev.get("user")

@@ -3,7 +3,6 @@
 import pytest
 
 from wikicontrib.classify import (
-    Classification,
     ClassifierConfig,
     EditType,
     classify_edit,
@@ -139,11 +138,9 @@ def test_revert_comment_beats_additive_signal():
 # -- config -----------------------------------------------------------------
 
 
-def test_config_threshold_changes_outcome():
+def test_config_trim_threshold_changes_outcome():
     diff = _diff(added=8, removed=0)
-    strict = ClassifierConfig(additive_net_words=20)
-    # 8 net words: additive under the default (>=10? no, 8<10 -> small-addition
-    # which is still additive), but with a higher bar it's a small-addition too.
+    # Eight net words remain a small additive edit under the default policy.
     default = classify_edit(diff)
     assert default.edit_type is EditType.ADDITIVE
     # Raise the trim threshold so a modest removal counts as a trim.

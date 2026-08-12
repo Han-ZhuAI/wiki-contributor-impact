@@ -5,8 +5,8 @@ import pytest
 from wikicontrib.diff import RevisionDiff
 from wikicontrib.metrics import (
     HIDDEN_AUTHOR,
-    aggregate_volume,
     ContributorVolume,
+    aggregate_volume,
 )
 
 
