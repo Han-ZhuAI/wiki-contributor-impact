@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "method": {
     "baseline": "equal weights across all four axes",
     "alternatives": "double one axis while holding the others at one",
@@ -11,7 +11,7 @@
     ],
     "revision_limit": 50,
     "historical_slice": true,
-    "automated_account_heuristic": "username contains bot/script or an edit comment explicitly says automated/bot; candidates require manual verification"
+    "automation_handling": "compare the full ranking with an opt-in ranking that omits high-confidence username candidates; keep all revisions in diff and provenance calculations"
   },
   "articles": [
     {
@@ -21,7 +21,46 @@
       "contributor_count": 47,
       "top_k": 10,
       "baseline_winner": "Conversion script",
+      "baseline_automation_filtered_winner": "Raul654",
+      "automation": {
+        "policy": "high-confidence username markers may be excluded from ranking; comment-only candidates remain review-only",
+        "history_treatment": "all revisions remain in diff and provenance calculations",
+        "candidates": [
+          {
+            "user": "Conversion script",
+            "confidence": "high",
+            "eligible_for_exclusion": true,
+            "reasons": [
+              "explicit_automation_comment",
+              "username_script_marker"
+            ],
+            "evidence_revision_ids": [
+              7471,
+              7520
+            ]
+          },
+          {
+            "user": "The Anomebot",
+            "confidence": "high",
+            "eligible_for_exclusion": true,
+            "reasons": [
+              "username_bot_marker"
+            ],
+            "evidence_revision_ids": [
+              1456491
+            ]
+          }
+        ],
+        "exclusion_candidates": [
+          "Conversion script",
+          "The Anomebot"
+        ]
+      },
       "automated_account_candidates": [
+        "Conversion script",
+        "The Anomebot"
+      ],
+      "excluded_automated_candidates": [
         "Conversion script",
         "The Anomebot"
       ],
@@ -43,6 +82,9 @@
           },
           "winner": "Conversion script",
           "winner_score": 0.75,
+          "automation_filtered_winner": "Raul654",
+          "automation_filtered_winner_score": 0.7281454909734368,
+          "winner_changes_after_automation_filter": true,
           "top_contributors": [
             "Conversion script",
             "Raul654",
@@ -70,6 +112,9 @@
           },
           "winner": "Conversion script",
           "winner_score": 0.8,
+          "automation_filtered_winner": "Manning Bartlett",
+          "automation_filtered_winner_score": 0.7374594638937798,
+          "winner_changes_after_automation_filter": true,
           "top_contributors": [
             "Conversion script",
             "Manning Bartlett",
@@ -97,6 +142,9 @@
           },
           "winner": "Conversion script",
           "winner_score": 0.8,
+          "automation_filtered_winner": "Raul654",
+          "automation_filtered_winner_score": 0.7825163927787495,
+          "winner_changes_after_automation_filter": true,
           "top_contributors": [
             "Conversion script",
             "Raul654",
@@ -124,6 +172,9 @@
           },
           "winner": "Conversion script",
           "winner_score": 0.8,
+          "automation_filtered_winner": "Manning Bartlett",
+          "automation_filtered_winner_score": 0.7370262823582937,
+          "winner_changes_after_automation_filter": true,
           "top_contributors": [
             "Conversion script",
             "Manning Bartlett",
@@ -151,6 +202,9 @@
           },
           "winner": "Raul654",
           "winner_score": 0.773569024357731,
+          "automation_filtered_winner": "Raul654",
+          "automation_filtered_winner_score": 0.773569024357731,
+          "winner_changes_after_automation_filter": false,
           "top_contributors": [
             "Raul654",
             "Conversion script",
@@ -177,7 +231,33 @@
       "contributor_count": 41,
       "top_k": 10,
       "baseline_winner": "Kokiri",
-      "automated_account_candidates": [],
+      "baseline_automation_filtered_winner": "Kokiri",
+      "automation": {
+        "policy": "high-confidence username markers may be excluded from ranking; comment-only candidates remain review-only",
+        "history_treatment": "all revisions remain in diff and provenance calculations",
+        "candidates": [
+          {
+            "user": "Template namespace initialisation script",
+            "confidence": "high",
+            "eligible_for_exclusion": true,
+            "reasons": [
+              "username_script_marker"
+            ],
+            "evidence_revision_ids": [
+              10163674
+            ]
+          }
+        ],
+        "exclusion_candidates": [
+          "Template namespace initialisation script"
+        ]
+      },
+      "automated_account_candidates": [
+        "Template namespace initialisation script"
+      ],
+      "excluded_automated_candidates": [
+        "Template namespace initialisation script"
+      ],
       "baseline_winner_is_automated_candidate": false,
       "distinct_winners": [
         "Kokiri"
@@ -195,6 +275,9 @@
           },
           "winner": "Kokiri",
           "winner_score": 0.787913520115638,
+          "automation_filtered_winner": "Kokiri",
+          "automation_filtered_winner_score": 0.787913520115638,
+          "winner_changes_after_automation_filter": false,
           "top_contributors": [
             "Kokiri",
             "Menchi",
@@ -222,6 +305,9 @@
           },
           "winner": "Kokiri",
           "winner_score": 0.8273282988516875,
+          "automation_filtered_winner": "Kokiri",
+          "automation_filtered_winner_score": 0.8273282988516875,
+          "winner_changes_after_automation_filter": false,
           "top_contributors": [
             "Kokiri",
             "Menchi",
@@ -249,6 +335,9 @@
           },
           "winner": "Kokiri",
           "winner_score": 0.6636641494258437,
+          "automation_filtered_winner": "Kokiri",
+          "automation_filtered_winner_score": 0.6636641494258437,
+          "winner_changes_after_automation_filter": false,
           "top_contributors": [
             "Kokiri",
             "Menchi",
@@ -276,6 +365,9 @@
           },
           "winner": "Kokiri",
           "winner_score": 0.8303308160925105,
+          "automation_filtered_winner": "Kokiri",
+          "automation_filtered_winner_score": 0.8303308160925105,
+          "winner_changes_after_automation_filter": false,
           "top_contributors": [
             "Kokiri",
             "Menchi",
@@ -303,6 +395,9 @@
           },
           "winner": "Kokiri",
           "winner_score": 0.8303308160925105,
+          "automation_filtered_winner": "Kokiri",
+          "automation_filtered_winner_score": 0.8303308160925105,
+          "winner_changes_after_automation_filter": false,
           "top_contributors": [
             "Kokiri",
             "Menchi",
@@ -329,7 +424,33 @@
       "contributor_count": 29,
       "top_k": 10,
       "baseline_winner": "Fubar Obfusco",
+      "baseline_automation_filtered_winner": "Fubar Obfusco",
+      "automation": {
+        "policy": "high-confidence username markers may be excluded from ranking; comment-only candidates remain review-only",
+        "history_treatment": "all revisions remain in diff and provenance calculations",
+        "candidates": [
+          {
+            "user": "Conversion script",
+            "confidence": "high",
+            "eligible_for_exclusion": true,
+            "reasons": [
+              "explicit_automation_comment",
+              "username_script_marker"
+            ],
+            "evidence_revision_ids": [
+              3492,
+              110220
+            ]
+          }
+        ],
+        "exclusion_candidates": [
+          "Conversion script"
+        ]
+      },
       "automated_account_candidates": [
+        "Conversion script"
+      ],
+      "excluded_automated_candidates": [
         "Conversion script"
       ],
       "baseline_winner_is_automated_candidate": false,
@@ -349,6 +470,9 @@
           },
           "winner": "Fubar Obfusco",
           "winner_score": 0.8153356481482954,
+          "automation_filtered_winner": "Fubar Obfusco",
+          "automation_filtered_winner_score": 0.8153356481482954,
+          "winner_changes_after_automation_filter": false,
           "top_contributors": [
             "Fubar Obfusco",
             "Kragen",
@@ -376,6 +500,9 @@
           },
           "winner": "Fubar Obfusco",
           "winner_score": 0.8522685185186364,
+          "automation_filtered_winner": "Fubar Obfusco",
+          "automation_filtered_winner_score": 0.8522685185186364,
+          "winner_changes_after_automation_filter": false,
           "top_contributors": [
             "Fubar Obfusco",
             "Kragen",
@@ -403,6 +530,9 @@
           },
           "winner": "Fubar Obfusco",
           "winner_score": 0.7856018518519697,
+          "automation_filtered_winner": "Fubar Obfusco",
+          "automation_filtered_winner_score": 0.7856018518519697,
+          "winner_changes_after_automation_filter": false,
           "top_contributors": [
             "Fubar Obfusco",
             "Kragen",
@@ -430,6 +560,9 @@
           },
           "winner": "Fubar Obfusco",
           "winner_score": 0.8522685185186364,
+          "automation_filtered_winner": "Fubar Obfusco",
+          "automation_filtered_winner_score": 0.8522685185186364,
+          "winner_changes_after_automation_filter": false,
           "top_contributors": [
             "Fubar Obfusco",
             "Kragen",
@@ -457,6 +590,9 @@
           },
           "winner": "Fubar Obfusco",
           "winner_score": 0.7712037037039393,
+          "automation_filtered_winner": "Fubar Obfusco",
+          "automation_filtered_winner_score": 0.7712037037039393,
+          "winner_changes_after_automation_filter": false,
           "top_contributors": [
             "Fubar Obfusco",
             "Kragen",

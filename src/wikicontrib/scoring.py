@@ -8,6 +8,7 @@ ranking can be audited instead of treated as a black box.
 
 from __future__ import annotations
 
+from collections.abc import Collection
 from dataclasses import dataclass, field, replace
 from math import isfinite
 
@@ -108,6 +109,7 @@ class ImpactReport:
 
     weights: ScoreWeights = field(default_factory=ScoreWeights)
     contributors: dict[str, ContributorImpact] = field(default_factory=dict)
+    excluded_users: tuple[str, ...] = ()
 
     @property
     def ranked(self) -> list[ContributorImpact]:
@@ -137,28 +139,48 @@ def build_impact_report(
     article_revisions: list[RawRevision],
     talk_revisions: list[RawRevision] | None = None,
     weights: ScoreWeights | None = None,
+    *,
+    excluded_users: Collection[str] = (),
 ) -> ImpactReport:
     """Build profiles from revision histories and calculate composite scores."""
-    return score_profiles(build_profiles(article_revisions, talk_revisions), weights)
+    return score_profiles(
+        build_profiles(article_revisions, talk_revisions),
+        weights,
+        excluded_users=excluded_users,
+    )
 
 
 def score_profiles(
     profiles: ProfileReport,
     weights: ScoreWeights | None = None,
+    *,
+    excluded_users: Collection[str] = (),
 ) -> ImpactReport:
-    """Apply a visible weighted sum to normalised contributor profiles."""
+    """Apply a visible weighted sum, optionally omitting named ranked users.
+
+    Profiles are scored with their original article-local normalisation.  This
+    keeps automation filtering at the presentation/ranking layer instead of
+    deleting revisions or changing token provenance.
+    """
     selected_weights = weights or ScoreWeights()
     normalised_weights = selected_weights.normalised
+    excluded = frozenset(excluded_users)
     unranked = [
         _score_profile(profile, normalised_weights)
         for profile in profiles.contributors.values()
+        if profile.user not in excluded
     ]
     ordered = sorted(unranked, key=lambda result: (-result.score, result.user))
     ranked = {
         result.user: replace(result, rank=rank)
         for rank, result in enumerate(ordered, start=1)
     }
-    return ImpactReport(weights=selected_weights, contributors=ranked)
+    observed_exclusions = tuple(sorted(excluded & profiles.contributors.keys()))
+    return ImpactReport(
+        weights=selected_weights,
+        contributors=ranked,
+        excluded_users=observed_exclusions,
+    )
 
 
 def _score_profile(

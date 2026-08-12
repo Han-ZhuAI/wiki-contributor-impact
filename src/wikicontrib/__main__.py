@@ -97,6 +97,14 @@ def build_parser() -> argparse.ArgumentParser:
             "this automatically enables revision-text analysis"
         ),
     )
+    analyze.add_argument(
+        "--exclude-automated-candidates",
+        action="store_true",
+        help=(
+            "omit high-confidence bot/script username candidates from the "
+            "composite ranking while preserving all revisions and provenance"
+        ),
+    )
     for dimension in ("volume", "additive", "persistence", "discussion"):
         analyze.add_argument(
             f"--weight-{dimension}",
@@ -166,6 +174,7 @@ def main(argv: list[str] | None = None) -> int:
             output_json=args.output_json,
             charts_dir=args.charts_dir,
             limit=args.top,
+            exclude_automated_candidates=args.exclude_automated_candidates,
         )
 
     if args.command == "evaluate":
@@ -231,13 +240,14 @@ def _run_evaluate(
     print(f"[wikicontrib {__version__}] weight-sensitivity evaluation")
     print(
         f"  {'article':<30}{'editors':>9}{'balanced winner':>24}"
-        f"{'winners':>9}{'min overlap':>13}{'min rho':>10}"
+        f"{'filtered winner':>24}{'winners':>9}{'min overlap':>13}{'min rho':>10}"
     )
-    print("  " + "-" * 95)
+    print("  " + "-" * 119)
     for evaluation in report.articles:
         print(
             f"  {evaluation.title[:29]:<30}{evaluation.contributor_count:>9}"
             f"{evaluation.baseline_winner[:23]:>24}"
+            f"{(evaluation.baseline_automation_filtered_winner or 'none')[:23]:>24}"
             f"{len(evaluation.distinct_winners):>9}"
             f"{evaluation.minimum_top_k_overlap:>13.3f}"
             f"{evaluation.minimum_spearman_rho:>10.3f}"
@@ -260,12 +270,18 @@ def _run_analyze(
     output_json: Path | None = None,
     charts_dir: Path | None = None,
     limit: int = 15,
+    exclude_automated_candidates: bool = False,
 ) -> int:
     """Fetch the article + talk history and report available impact metrics."""
     from .api import WikiAPIError
     from .store import RevisionStore
 
-    include_content = with_diff or output_json is not None or charts_dir is not None
+    include_content = (
+        with_diff
+        or output_json is not None
+        or charts_dir is not None
+        or exclude_automated_candidates
+    )
     store = RevisionStore()
     try:
         history = store.get_page_history(
@@ -305,6 +321,7 @@ def _run_analyze(
         print("  talk page         : (none found)")
 
     if include_content:
+        from .automation import detect_automation_candidates
         from .discussion import analyze_discussion
         from .elements import aggregate_element_history
         from .metrics import aggregate_history
@@ -319,13 +336,28 @@ def _run_analyze(
         )
         elements = aggregate_element_history(revisions)
         profiles = assemble_profiles(volume, persistence, discussion)
-        impact = score_profiles(profiles, weights or ScoreWeights())
+        automation = detect_automation_candidates(
+            revisions,
+            history.talk_revisions if history.has_talk else [],
+        )
+        excluded_users = (
+            automation.exclusion_candidates if exclude_automated_candidates else ()
+        )
+        impact = score_profiles(
+            profiles,
+            weights or ScoreWeights(),
+            excluded_users=excluded_users,
+        )
 
         _print_volume_report(volume, limit)
         _print_persistence_report(persistence, limit)
         _print_element_report(elements)
         if history.has_talk:
             _print_discussion_report(discussion, limit)
+        _print_automation_report(
+            automation,
+            filtering_enabled=exclude_automated_candidates,
+        )
         _print_impact_leaderboard(impact, limit)
 
         if charts_dir is not None:
@@ -355,6 +387,7 @@ def _run_analyze(
                     profiles,
                     impact,
                     elements,
+                    automation,
                 )
             except OSError as exc:
                 print(f"error: could not write JSON report: {exc}")
@@ -503,6 +536,29 @@ def _print_impact_leaderboard(report, limit: int = 15) -> None:
             f"{vector['discussion']:>9.3f}{result.participation_scope:>14}"
         )
     print("    score = weighted sum of the four displayed normalised axes")
+    if report.excluded_users:
+        print(
+            "    ranking excludes high-confidence automation candidates: "
+            + ", ".join(report.excluded_users)
+        )
+
+
+def _print_automation_report(report, *, filtering_enabled: bool) -> None:
+    """Explain automation evidence and whether it affects ranking eligibility."""
+    if not report.candidates:
+        return
+    print("\n  automation review:")
+    for candidate in report.candidates:
+        print(
+            f"    {candidate.user}: confidence={candidate.confidence}; "
+            f"signals={','.join(candidate.reasons)}"
+        )
+    if filtering_enabled:
+        excluded = ", ".join(report.exclusion_candidates) or "none"
+        print(f"    excluded from composite ranking: {excluded}")
+    else:
+        print("    ranking unchanged; use --exclude-automated-candidates to compare")
+    print("    all revisions remain in diff and provenance calculations")
 
 
 def _print_element_report(report) -> None:
@@ -520,7 +576,7 @@ def _print_element_report(report) -> None:
 
 
 def _write_json_report(
-    path, history, max_revisions, profiles, impact, elements
+    path, history, max_revisions, profiles, impact, elements, automation
 ) -> None:
     """Atomically write a reproducible, self-explaining JSON analysis report."""
     from .elements import ElementDelta
@@ -529,7 +585,7 @@ def _write_json_report(
     path.parent.mkdir(parents=True, exist_ok=True)
     capped = max_revisions is not None and len(history.revisions) >= max_revisions
     payload = {
-        "schema_version": 2,
+        "schema_version": 3,
         "article": {
             "title": history.title,
             "talk_title": getattr(history, "talk_title", None),
@@ -545,6 +601,11 @@ def _write_json_report(
             "historical_slice": capped,
         },
         "weights": impact.weights.normalised,
+        "automation": automation.as_dict(),
+        "ranking": {
+            "excluded_users": list(impact.excluded_users),
+            "history_and_provenance_preserved": True,
+        },
         "wikitext_elements": elements.total.as_dict(),
         "contributors": [],
     }

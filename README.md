@@ -179,9 +179,30 @@ python -m wikicontrib evaluate "Alan Turing" "Kimchi" \
 The evaluation reports winner changes, top-k overlap, Spearman rank
 correlation, mean absolute rank shift, and maximum rank shift. These are
 sensitivity diagnostics rather than ground-truth accuracy claims; capped runs
-remain explicitly described as historical slices. A transparent username/edit-
-comment heuristic also flags possible automated accounts for manual review; it
-does not silently remove them from the ranking.
+remain explicitly described as historical slices. It reports both the original
+winner and the winner after high-confidence automated-account candidates are
+omitted from ranking eligibility.
+
+## Automation-aware rankings
+
+Automation handling is deliberately auditable. Bot/script markers in a username
+form the high-confidence tier; edit-comment evidence alone remains review-only
+because a human editor may simply mention a bot. Candidate records include the
+reason codes and evidence revision IDs.
+
+By default, `analyze` still ranks every observed account. Request the comparison
+policy explicitly when the research question concerns human contributors:
+
+```bash
+python -m wikicontrib analyze "Alan Turing" --max-revisions 50 \
+  --exclude-automated-candidates --output-json results/alan-turing-human.json
+```
+
+This option changes only eligibility for the final composite ranking. Every
+revision remains in the token diff and provenance chain, so later contributions
+are evaluated against the article state that editors actually encountered. The
+heuristic is not proof of bot status, and its candidates still require manual
+verification before making claims about a named editor.
 
 ## Repository layout
 

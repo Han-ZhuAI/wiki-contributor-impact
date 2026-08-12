@@ -169,6 +169,23 @@ def test_empty_profiles_produce_empty_rank_and_rows():
     assert report.rows == []
 
 
+def test_explicit_exclusion_changes_only_ranking_eligibility():
+    profiles = ProfileReport(
+        {
+            "ImportBot": _profile("ImportBot", volume=1.0, persistence=1.0),
+            "Alice": _profile("Alice", volume=0.8, persistence=0.8),
+        }
+    )
+
+    report = score_profiles(profiles, excluded_users={"ImportBot", "MissingBot"})
+
+    assert [result.user for result in report.ranked] == ["Alice"]
+    assert report.excluded_users == ("ImportBot",)
+    assert (
+        report.ranked[0].feature_vector == profiles.contributors["Alice"].feature_vector
+    )
+
+
 def test_rows_keep_rank_total_scope_and_full_vector():
     report = score_profiles(
         ProfileReport(
