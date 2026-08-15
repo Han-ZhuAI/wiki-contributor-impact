@@ -39,16 +39,26 @@ full wikitext content. No scraping and no credentials are required.
 
 ## Status
 
-Under active development. The data pipeline, revision diffing, contributor
-volume, additive/maintenance classification, exact-revert detection and
-content-persistence metrics are implemented. Talk-page signatures, threads,
-replies, discussion centrality and post-to-edit temporal links are also
-measured. These signals are assembled into normalised per-contributor feature
-profiles and an explainable, configurable weighted composite score. The CLI
-also classifies changed words as prose, headings, references, templates,
-tables, categories, or links. It exports complete JSON reports and reproducible
-PNG visual summaries. See
-[SCHEDULE.md](SCHEDULE.md).
+**Version 1.0 is complete.** The release includes token-level diff and provenance
+chaining, additive/maintenance classification, seven-class wikitext analysis,
+Talk-page reply-graph PageRank, four-axis contributor profiles, configurable
+scoring, automation-aware ranking comparisons, JSON export, PNG charts,
+cross-article sensitivity evaluation, documentation and CI.
+
+The committed validation baseline is **245 passing tests**, **95.45% total
+coverage**, and passing GitHub Actions jobs on Python 3.10 and 3.12.
+
+Written delivery materials:
+
+- [Final report](report/WikiContrib_Final_Report_v1.0_EN.pdf)
+- [Product Requirements Document](report/WikiContrib_PRD_v1.0_EN.pdf)
+- [ER design](report/WikiContrib_ER_Design_v1.0_EN.pdf)
+- [Sensitivity evaluation](report/evaluation.md)
+- [v1.0 release notes](release/v1.0.md)
+
+The report is the selected submission explanation. Evaluation runs are
+historical slices and rankings remain descriptive outputs under explicit
+weights, not causal or ground-truth claims.
 
 Every push and pull request is checked on Python 3.10 and 3.12. The CI workflow
 runs static checks, compiles the package and tests, executes the full test suite,
