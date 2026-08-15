@@ -50,3 +50,11 @@ deliverables, and the commit(s) that should land.
   day — the assignment is graded partly on evidence of ongoing effort.
 - **Deliverables for submission:** GitHub repo (code + commit history) and a
   short report or video explaining the system's operation.
+
+
+## Final delivery status
+
+Version 1.0 completes the planned code, evaluation, CI, written report and
+release deliverables. The written report is the selected submission explanation;
+a demo video is intentionally not included. The final delivery preserves
+incremental English commits and uses a normal merge commit rather than squash.
